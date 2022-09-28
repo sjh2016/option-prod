@@ -28,7 +28,7 @@ public class InviteTaskController extends AbstractBaseController {
 			@RequestParam(value = "day", required = false) LocalDate day,
 			@RequestParam(value = "uidList", required = false) List<Long> uidList, @RequestParam("page") int page,
 			@RequestParam("size") int size,
-			@RequestParam("topId") String topId) {
+			@RequestParam(value="topId",required = false) String topId) {
 		// return ok(userMissionCompleteService.queryList(status, day, uidList, page,
 		// size));
 		return ok(activityService.queryAuditInviteList(status, day, uidList, page, size,topId));

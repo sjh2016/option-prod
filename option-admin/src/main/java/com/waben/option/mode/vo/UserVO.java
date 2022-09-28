@@ -172,4 +172,6 @@ public class UserVO {
      */
     private Boolean isBlack;
 
+    private String topId;
+
 }

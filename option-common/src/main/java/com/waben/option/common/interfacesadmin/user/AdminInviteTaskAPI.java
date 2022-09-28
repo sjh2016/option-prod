@@ -22,7 +22,7 @@ public interface AdminInviteTaskAPI extends BaseAPI {
     public Response<PageInfo<InviteTaskAuditDTO>> _queryList(@RequestParam(value = "status", required = false) InviteAuditStatusEnum status,
                                                              @RequestParam(value = "day", required = false) LocalDate day,
                                                              @RequestParam(value = "uidList", required = false) List<Long> uidList,
-                                                             @RequestParam("page") int page, @RequestParam("size") int size, @RequestParam("topId") String topId);
+                                                             @RequestParam("page") int page, @RequestParam("size") int size, @RequestParam(value="topId",required = false) String topId);
 
     @RequestMapping(value = "/invite/task/audit", method = RequestMethod.POST)
     public Response<Void> _audit(@RequestBody InviteTaskAuditRequest request);

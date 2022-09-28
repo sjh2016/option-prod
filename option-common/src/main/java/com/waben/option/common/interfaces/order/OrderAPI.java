@@ -44,7 +44,7 @@ public interface OrderAPI extends BaseAPI {
 	@RequestMapping(value = "/queryPage", method = RequestMethod.GET)
 	public Response<PageInfo<OrderDTO>> _queryPage(@RequestParam(value = "userId", required = false) Long userId,
 			@RequestParam(value = "status", required = false) OrderStatusEnum status, @RequestParam("page") int page,
-			@RequestParam("size") int size,@RequestParam("topId") String topId);
+			@RequestParam("size") int size,@RequestParam(value="topId",required = false) String topId);
 
 	@RequestMapping(value = "/user/sta", method = RequestMethod.GET)
 	public Response<OrderUserStaDTO> _userSta(@RequestParam("userId") Long userId);
