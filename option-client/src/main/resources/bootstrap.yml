@@ -1,0 +1,114 @@
+server:
+  port: 9100
+  tomcat: 
+    basedir: /mnt/application/option-client/temp
+
+spring:
+  application:
+    name: client-server
+  profiles:
+    active: prod
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        timeout: 120000
+      config:
+        server-addr: 127.0.0.1:8848
+        file-extension: yaml
+        timeout: 120000
+  servlet:
+    multipart:
+      max-file-size: 30000000
+      max-request-size: 300000000
+  swagger:
+    enable: false
+
+logging:
+  config: "classpath:log4j2.xml"
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 120000
+        read-timeout: 120000
+
+web:
+  config:
+    websocket:
+      host: 0.0.0.0
+      port: 9101
+      io-thread-num: 4
+      backlog: 1024
+      low-mark: 262144
+      high-mark: 524288
+      read-idle-time: 60
+      response-data-compress: true
+    auth-server: true
+    open-flow-log: true
+    store-flow-log: false
+    log-queue: queue.logger.user
+    max-request-limit-count: 30
+    enable: true
+    anon:
+      - /test/**
+      - /login
+      - /reconnect
+      - /heartbeat
+      - /user/register
+      - /user/register/encrypt
+      - /user/update/password/login1
+      - /user/update/password/login2
+      - /user/verify/username
+      - /swagger**
+      - /swagger**/**
+      - /webjars/**
+      - /v3/api-docs
+      - /error
+      - /language/**
+      - /language/**/**
+      - /push/data
+      - /operator/queryList
+      - /country/queryList
+      - /recharge/queryList
+      - /commodity/query
+      - /banner/list
+      - /banner/queryById
+      - /banner/query
+      - /code/**
+      - /code/**/**
+      - /payment_callback/**
+      - /payment_callback/**/**
+      - /incomeRank/queryList
+      - /payment_callback/lets/payCallback
+      - /payment_callback/lets/withdrawCallback
+      - /payment_callback/lets/withdrawCallback
+      - /client/caller/links/query
+      - /userMission/autoAward
+      - /google/login
+      - /paymentImage/clientQuery
+      - /order/orderSettlement
+      - /lucky/queryLuckyDrawCommodity
+      - /order/queryOrderCount
+      - /allowance/query
+      - /admin-manage/**
+      - /main/**
+      - /h5/**
+      - /news/list
+      - /config/**
+      - /appVest/query
+      - /point_product/list
+      - /order/dynamic/page
+      - /gateway/entry
+    anon-gateway:
+      - login
+      - register
+      - sendVerifyCode
+      - sendImageCode
+      - queryImgBaseUrl
+      - productList
+      - productHotList
+      - productDynamicOrderPageData

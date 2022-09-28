@@ -1,0 +1,36 @@
+server:
+  port: 9400
+
+spring:
+  application:
+    name: job-server
+  profiles:
+    active: prod
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+      config:
+        server-addr: 127.0.0.1:8848
+        file-extension: yaml
+
+
+logging:
+  config: "classpath:log4j2.xml"
+
+web:
+  config:
+    enable: true
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 30000
+
+
+
+

@@ -1,0 +1,8 @@
+package com.waben.option.common.model.enums;
+
+public enum DBTypeEnum {
+
+    MASTER,
+    SLAVE1,
+    SLAVE2
+}
