@@ -499,7 +499,7 @@ public class OrderService {
         Order order = orderDao.selectById(request.getId());
         if (order == null)
             throw new ServerException(1019);
-        if (request.getStatus() != null && order.getStatus() == OrderStatusEnum.WAITING) {
+        if (request.getStatus() != null) {
             order.setStatus(request.getStatus());
             // 审核通过
 //            if (request.getStatus() == OrderStatusEnum.WORKING) {

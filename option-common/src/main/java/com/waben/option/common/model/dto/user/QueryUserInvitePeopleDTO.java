@@ -11,5 +11,7 @@ public class QueryUserInvitePeopleDTO {
 
     private String uid;
 
+    private Integer up;
+
     
 }

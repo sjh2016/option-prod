@@ -3,6 +3,7 @@ package com.waben.option.service.user;
 import com.waben.option.common.exception.ServerException;
 import com.waben.option.common.interfaces.order.OrderAPI;
 import com.waben.option.common.interfaces.user.UserAPI;
+import com.waben.option.common.interfacesadmin.user.AdminUserAPI;
 import com.waben.option.common.model.PageInfo;
 import com.waben.option.common.model.dto.order.OrderUserStaDTO;
 import com.waben.option.common.model.dto.user.*;
@@ -44,6 +45,7 @@ public class UserService {
 
     @Resource
     private ModelMapper modelMapper;
+
 
     public UserVO register(ClientRegisterUserRequest clientRequest) {
         RegisterUserRequest request = modelMapper.map(clientRequest, RegisterUserRequest.class);

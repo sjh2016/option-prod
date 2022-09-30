@@ -35,6 +35,9 @@ public interface UserDao extends BaseRepository<User> {
     @Select("SELECT symbol FROM t_u_user WHERE parent_id=#{parentId} ORDER BY CONVERT(RIGHT(symbol,5),UNSIGNED) DESC limit 1")
     String queryMaxSymbol(@Param("parentId") Long parentId);
 
+    @Select("SELECT symbol FROM t_u_user WHERE id=#{id} ORDER BY CONVERT(RIGHT(symbol,5),UNSIGNED) DESC limit 1")
+    String queryMaxSymbolById(@Param("id") Long id);
+
     @Select("select id userId, symbol from t_u_user where symbol like concat(#{symbol}, '%')")
     List<UserSymbolDTO> queryUidList(@Param("symbol") String symbol);
 

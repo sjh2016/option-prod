@@ -603,7 +603,7 @@ public class ActivityService {
             List<User> users = userDao.selectList(queryUser);
             if (!CollectionUtils.isEmpty(users)){
                 List<Long> collect = users.stream().map(User::getId).collect(Collectors.toList());
-                query.in(ActivityUserJoin.USER_ID, collect);
+                query.in(ActivityUserJoin.JOIN_USER_ID, collect);
             }
         }
         query.orderByDesc(ActivityUserJoin.GMT_CREATE);
@@ -677,11 +677,24 @@ public class ActivityService {
                         join.setReceiveTime(LocalDateTime.now());
                     }
                     List<AccountTransactionBean> transactionBeanList = new ArrayList<>();
-                    transactionBeanList.add(AccountTransactionBean.builder().userId(join.getUserId())
+
+                    AccountTransactionBean build = AccountTransactionBean.builder().userId(join.getUserId())
                             .type(TransactionEnum.CREDIT_INVITE_REGISTER)
                             .amount(activity.getRewardAmount().multiply(number)).transactionId(join.getId())
-                            .currency(staticConfig.getDefaultCurrency()).build());
+                            .currency(staticConfig.getDefaultCurrency()).build();
+
+                    AccountTransactionBean childBuild = AccountTransactionBean.builder().userId(join.getJoinUserId())
+                            .type(TransactionEnum.CREDIT_INVITE_REGISTER)
+                            .amount(activity.getRewardAmount().multiply(number)).transactionId(join.getId())
+                            .currency(staticConfig.getDefaultCurrency()).build();
+
+                    transactionBeanList.add(build);
+                    transactionBeanList.add(childBuild);
+
+                    //activityUserJoinDao.
+
                     accountService.transaction(join.getUserId(), transactionBeanList);
+
                 }
 //                registerGift(join.getUserId());
 //                if (!staticConfig.isContract()) {

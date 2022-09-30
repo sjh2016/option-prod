@@ -226,7 +226,7 @@ public class UserService {
 //                throw new ServerException(1061);
 //            }
 //        }
-        verifyRegisterParameter(request);
+//        verifyRegisterParameter(request);
         List<User> userList = userDao.selectList(new QueryWrapper<User>().eq(User.USERNAME, request.getUsername()));
         if (!CollectionUtils.isEmpty(userList)) {
             if (request.getRegisterType() == RegisterEnum.EMAIL) {
@@ -294,6 +294,12 @@ public class UserService {
         user.setSymbolCode(NumberUtil.generateCode(8));
         if(StringUtils.isNotBlank(request.getSymbolCode())){
             user.setParentSymbolCode(request.getSymbolCode());
+            QueryWrapper<User> query = new QueryWrapper<>();
+            query = query.eq(User.SYMBOL_CODE, request.getSymbolCode());
+            User userTopId = userDao.selectOne(query);
+            if (null != userTopId){
+                user.setTopId(StringUtils.isNotBlank(userTopId.getTopId())?userTopId.getTopId():userTopId.getSymbolCode());
+            }
         }else {
             user.setParentSymbolCode("0");
         }
@@ -701,6 +707,9 @@ public class UserService {
         String parentSymbol = "";
         if (!StringUtils.isBlank(symbolCode)) {
             User parent = queryUserBySymbolCode(symbolCode);
+            userId = parent.getId();
+            user.setParentId(userId);
+            parentSymbol = parent.getSymbol();
             // 检查是否禁止邀请用户
             if (activityForbidService.isForbid(parent.getId(), ActivityTypeEnum.INVITE)) {
                 log.info(parent.getId() + " invite " + user.getId() + ", but is forbidden");
@@ -740,6 +749,10 @@ public class UserService {
             user.setParentId(0L);
             maxSymbol = userDao.queryMaxSymbol(0L);
         }
+        //20220909 sj add
+//        if (StringUtils.isBlank(maxSymbol)){
+//            maxSymbol = userDao.queryMaxSymbol(0L);
+//        }
         maxSymbol = getCacheSymbol(userId, maxSymbol, parentSymbol);
         return maxSymbol;
     }
@@ -747,8 +760,8 @@ public class UserService {
     private String getCacheSymbol(Long userId, String maxSymbol, String parentSymbolCode) {
         String key = RedisKey.getKey(RedisKey.OPTION_USER_MAX_SYMBOL_KEY, userId);
         String cacheSymbol = (String) redisTemplate.opsForValue().get(key);
-        log.info("注册使用key[{}]cacheSymbol[{}]", key, cacheSymbol);
-        if (cacheSymbol != null && maxSymbol.compareTo(cacheSymbol) < 0) {
+        log.info("注册使用maxSymbol[{}]key[{}]cacheSymbol[{}]",maxSymbol, key, cacheSymbol);
+        if (StringUtils.isNotBlank(maxSymbol) && cacheSymbol != null && maxSymbol.compareTo(cacheSymbol) < 0) {
             maxSymbol = cacheSymbol;
         }
         maxSymbol = getNextCode(maxSymbol, parentSymbolCode);
@@ -1241,7 +1254,12 @@ public class UserService {
         UserInvitePeopleDTO userInvitePeopleDTO = new UserInvitePeopleDTO();
         BeanUtils.copyProperties(user,userInvitePeopleDTO);
         try {
-            getChildSymbolCode(userInvitePeopleDTO);
+            if (queryUserInvitePeopleDTO.getUp().equals(1)){
+                userInvitePeopleDTO.setParentId(user.getParentId());
+                getChildParent(userInvitePeopleDTO);
+            }else {
+                getChildSymbolCode(userInvitePeopleDTO);
+            }
             log.info("queryUserInvitePeople 结束 userDTO={}", JSON.toJSON(userInvitePeopleDTO));
             return userInvitePeopleDTO;
         } catch (Exception e) {
@@ -1256,6 +1274,7 @@ public class UserService {
             return;
         }
         LambdaQueryWrapper<User> qw = Wrappers.lambdaQuery();
+
         qw.eq(User::getParentSymbolCode, userInvitePeopleDTO.getSymbolCode());
         List<User> userList = userDao.selectList(qw);
         if(CollectionUtils.isEmpty(userList)){
@@ -1309,5 +1328,64 @@ public class UserService {
         userInvitePeopleDTO.setRealNumSum(withdrawTotalAmountParent.add(withdrawTotalAmount));
     }
 
+    private void getChildParent(UserInvitePeopleDTO userInvitePeopleDTO){
+        if(userInvitePeopleDTO == null || userInvitePeopleDTO.getParentId() == null){
+            return;
+        }
+        LambdaQueryWrapper<User> qw = Wrappers.lambdaQuery();
+
+        qw.eq(User::getUid, userInvitePeopleDTO.getParentId());
+        List<User> userList = userDao.selectList(qw);
+        if(CollectionUtils.isEmpty(userList)){
+            return;
+        }
+        ArrayList<UserInvitePeopleDTO> userDTOList = new ArrayList<>();
+        for (User userPO : userList) {
+            //查询金额
+            PaymentOrder paymentOrder = paymentOrderService.queryUserInvitePeopleAmount(userPO.getId());
+            UserInvitePeopleDTO dto = new UserInvitePeopleDTO();
+            BeanUtils.copyProperties(userPO,dto);
+            dto.setReqNumSum(paymentOrder.getReqNumSum());
+            dto.setReqMoneySum(paymentOrder.getReqMoneySum());
+            dto.setRealMoneySum(paymentOrder.getRealMoneySum());
+            dto.setRealNumSum(paymentOrder.getRealNumSum());
+            dto.setParentId(userPO.getParentId());
+
+            List<WithdrawAmountDTO> withdrawAmountDTOList = withdrawOrderService.totalWithdrawAmountByUsers(Collections.singletonList(userPO.getId()));
+            if(!CollectionUtils.isEmpty(withdrawAmountDTOList) && withdrawAmountDTOList.get(0).getAmount() != null){
+                dto.setWithdrawTotalAmount(withdrawAmountDTOList.get(0).getAmount());
+            }
+            userDTOList.add(dto);
+            getChildParent(dto);
+        }
+
+        BigDecimal reqNumSum = BigDecimal.ZERO;
+        BigDecimal reqMoneySum = BigDecimal.ZERO;
+        BigDecimal realMoneySum = BigDecimal.ZERO;
+        BigDecimal realNumSum = BigDecimal.ZERO;
+        BigDecimal withdrawTotalAmount = BigDecimal.ZERO;
+        for (UserInvitePeopleDTO invitePeopleDTO : userDTOList) {
+            reqNumSum = reqNumSum.add(invitePeopleDTO.getReqNumSum() == null?BigDecimal.ZERO:invitePeopleDTO.getReqNumSum());
+            reqMoneySum = reqMoneySum.add(invitePeopleDTO.getReqMoneySum() == null?BigDecimal.ZERO:invitePeopleDTO.getReqMoneySum());
+            realMoneySum = realMoneySum.add(invitePeopleDTO.getRealMoneySum() == null?BigDecimal.ZERO:invitePeopleDTO.getRealMoneySum());
+            realNumSum = realNumSum.add(invitePeopleDTO.getRealNumSum() == null?BigDecimal.ZERO:invitePeopleDTO.getRealNumSum());
+            withdrawTotalAmount = withdrawTotalAmount.add(invitePeopleDTO.getWithdrawTotalAmount() == null?BigDecimal.ZERO:invitePeopleDTO.getWithdrawTotalAmount());
+        }
+        userInvitePeopleDTO.setChildUserDTOList(userDTOList);
+        userInvitePeopleDTO.setSymbolCount(userDTOList.size());
+
+
+        BigDecimal reqNumSumParent = userInvitePeopleDTO.getReqNumSum() == null?BigDecimal.ZERO:userInvitePeopleDTO.getReqNumSum();
+        BigDecimal reqMoneySumParent = userInvitePeopleDTO.getReqMoneySum() == null?BigDecimal.ZERO:userInvitePeopleDTO.getReqMoneySum();
+        BigDecimal realMoneySumParent = userInvitePeopleDTO.getRealMoneySum() == null?BigDecimal.ZERO:userInvitePeopleDTO.getRealMoneySum();
+        BigDecimal realNumSumParent = userInvitePeopleDTO.getRealNumSum() == null?BigDecimal.ZERO:userInvitePeopleDTO.getRealNumSum();
+        BigDecimal withdrawTotalAmountParent = userInvitePeopleDTO.getWithdrawTotalAmount() == null?BigDecimal.ZERO:userInvitePeopleDTO.getWithdrawTotalAmount();
+
+        userInvitePeopleDTO.setReqNumSum(reqNumSumParent.add(reqNumSum));
+        userInvitePeopleDTO.setReqMoneySum(reqMoneySumParent.add(reqMoneySum));
+        userInvitePeopleDTO.setRealMoneySum(realMoneySumParent.add(realMoneySum));
+        userInvitePeopleDTO.setRealNumSum(realNumSumParent.add(realNumSum));
+        userInvitePeopleDTO.setRealNumSum(withdrawTotalAmountParent.add(withdrawTotalAmount));
+    }
 
 }

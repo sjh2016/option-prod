@@ -76,4 +76,7 @@ public class UserInvitePeopleDTO {
     private BigDecimal realNumSum;
 
     private BigDecimal withdrawTotalAmount;
+
+    private Long parentId;
+
 }

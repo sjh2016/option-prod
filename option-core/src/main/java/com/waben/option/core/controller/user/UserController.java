@@ -7,6 +7,7 @@ import com.waben.option.common.model.request.user.*;
 import com.waben.option.common.web.controller.AbstractBaseController;
 import com.waben.option.core.service.user.UserService;
 import com.waben.option.core.service.user.logger.UserLoggerService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,7 +15,7 @@ import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
+@Slf4j
 @RestController
 @RequestMapping("user")
 public class UserController extends AbstractBaseController {
@@ -28,6 +29,7 @@ public class UserController extends AbstractBaseController {
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public ResponseEntity<?> register(@RequestBody RegisterUserRequest request) {
+        log.info("register method : {}",request.getIp());
         return ok(userService.register(request));
     }
 
