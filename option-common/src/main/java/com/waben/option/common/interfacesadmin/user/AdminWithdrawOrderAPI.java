@@ -1,6 +1,7 @@
 package com.waben.option.common.interfacesadmin.user;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -70,6 +71,9 @@ public interface AdminWithdrawOrderAPI extends BaseAPI {
     @RequestMapping(value = "/withdraw_order/isWithdrawTime", method = RequestMethod.GET)
     public Response<Boolean> _isWithdrawTime();
 
+    @RequestMapping(value = "/withdraw_order/draw", method = RequestMethod.POST)
+    public Response<Map<String,String>> _draw(@RequestParam(value="topId",required = false) String topId);
+
     public default WithdrawOrderDTO query(Long id) {
         return getResponseData(_query(id));
     }
@@ -122,4 +126,7 @@ public interface AdminWithdrawOrderAPI extends BaseAPI {
         return getResponseData(_isWithdrawTime());
     }
 
+    public default Map<String,String> draw(String topId) {
+        return getResponseData(_draw(topId));
+    }
 }

@@ -11,7 +11,7 @@ public class StaticConfig {
 	@Value("${isContract:false}")
 	private boolean isContract;
 
-	@Value("${defaultCurrency:IDR}")
+	@Value("${defaultCurrency:NGN}")
 	private String defaultCurrency;
 
 	public boolean isContract() {

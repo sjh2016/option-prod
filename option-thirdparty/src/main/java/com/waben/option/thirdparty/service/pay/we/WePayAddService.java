@@ -1,5 +1,7 @@
 package com.waben.option.thirdparty.service.pay.we;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waben.option.common.component.IdWorker;
@@ -16,16 +18,25 @@ import com.waben.option.common.model.request.payment.PaymentUpdateThirdInfoReque
 import com.waben.option.common.model.request.payment.WithdrawSystemRequest;
 import com.waben.option.common.util.EncryptUtil;
 import com.waben.option.common.util.JacksonUtil;
+import com.waben.option.common.util.RsaSecretUtils;
+import com.waben.option.common.util.RsaUtil;
 import com.waben.option.thirdparty.service.ip.IpAddressService;
 import com.waben.option.thirdparty.service.pay.AbstractPaymentService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import okhttp3.internal.http.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Base64Utils;
+import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLEncoder;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -34,7 +45,7 @@ import java.util.TreeMap;
 
 @Slf4j
 @Service
-public class WePayService extends AbstractPaymentService {
+public class WePayAddService extends AbstractPaymentService {
 
     @Resource
     private ObjectMapper objectMapper;
@@ -54,17 +65,14 @@ public class WePayService extends AbstractPaymentService {
     @Resource
     private IpAddressService ipService;
 
+
+
     private DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public Map<String, Object> pay(Long userId, String userIp, PayFrontRequest request, UserDTO user, PaymentApiConfigDTO payApiConfig, PaymentMethodDTO method, PaymentPassagewayDTO passageway) {
-        log.info("user: {}, wepay payment request: {}", userId, request);
-        // 银联需要选择银行
-//		if ("020".equals(method.getParam()) || "021".equals(method.getParam()) || "022".equals(method.getParam())) {
-//			if (StringUtils.isBlank(request.getBankCode())) {
-//				throw new ServerException(BusinessErrorConstants.ERROR_PAYMENT_BANK_CODE_EMPTY);
-//			}
-//		}
+        log.info("user: {}, wepay add payment request: {}", userId, request);
+
         if ("200".equals(method.getParam()) || "220".equals(method.getParam())) {
             request.setBankCode("BCA");
         }
@@ -94,36 +102,47 @@ public class WePayService extends AbstractPaymentService {
 //        order.setGmtCreate(now);
         paymentOrderAPI.createOrder(order);
         try {
+
+
             // 构建参数
             Map<String, Object> params = new TreeMap<>();
-            params.put("version", "1.0");
-            params.put("mch_id", payApiConfig.getMerchantId());
-            params.put("notify_url", payApiConfig.getNotifyUrl());
-            params.put("mch_order_no", String.valueOf(orderId));
-            params.put("pay_type", method.getParam());
-            params.put("trade_amount", request.getReqMoney().setScale(0, RoundingMode.DOWN).toPlainString());
-            params.put("order_date", formatter.format(LocalDateTime.now()));
-//			if ("200".equals(method.getParam()) || "220".equals(method.getParam())) {
-            params.put("bank_code", request.getBankCode());
-//			}
-            params.put("goods_name", "recharge" + params.get("trade_amount"));
+            params.put("mer_no",payApiConfig.getMerchantId());
+            params.put("mer_order_no", String.valueOf(orderId));
+            params.put("pname", "zhangsa");
+            params.put("pemail", "test@mail.com");
+            params.put("phone",user.getUsername());
+            params.put("order_amount", request.getReqMoney().setScale(0, RoundingMode.DOWN).toPlainString());
+            params.put("ccy_no","NGN");
+            params.put("busi_code","100501");
+            params.put("bankCode",request.getBankCode());
+            params.put("notifyUrl", payApiConfig.getNotifyUrl());
+            params.put("pageUrl",payApiConfig.getReturnUrl());
+            params.put("goods","test");
             // 签名
-            String sign = EncryptUtil.getMD5(mapToQueryString(params) + "&key=" + payApiConfig.getSecretKey()).toLowerCase();
-            params.put("sign_type", "MD5");
+            String sign = signRsA(mapToQueryString(params),payApiConfig.getPrivateKey());
+            //String sign = EncryptUtil.getMD5(mapToQueryString(params)).toLowerCase();
+            //params.put("sign_type", "RSA");
             params.put("sign", sign);
             // 请求上游
-            String paramString = mapToQueryString(params);
-            log.info("wepay payment param: {}", paramString);
-            Request postRequest = new Request.Builder().url(payApiConfig.getOrderUrl()).post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded;charset=UTF-8"), paramString)).build();
+//            String paramString = mapToQueryString(params);
+//            log.info("wepay payment param: {}", paramString);
+
+
+            String jsonStr = JSON.toJSONString(params);
+            log.info("wepay add payment param json: {}", jsonStr);
+            Request postRequest = new Request.Builder().url(payApiConfig.getOrderUrl()).post(RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), jsonStr)).build();
             Response response = okHttpClient.newCall(postRequest).execute();
             String json = response.body().string();
-            log.info("wepay payment response: " + json);
+            log.info("wepay  add payment response: " + json);
+
+//            String json = new RestTemplate().postForObject(url, paramString, String.class);
+//            log.info("wepay payment response: " + json);
+            JsonNode jsonNode = JacksonUtil.decodeToNode(json);
             if (response.isSuccessful()) {
-                JsonNode jsonNode = JacksonUtil.decodeToNode(json);
-                String status = jsonNode.get("respCode").asText();
+                String status = jsonNode.get("status").asText();
                 if ("SUCCESS".equals(status)) {
-                    String thirdOrderNo = jsonNode.get("orderNo").asText();
-                    String payUrl = jsonNode.get("payInfo").asText();
+                    String thirdOrderNo = jsonNode.get("order_no").asText();
+                    String payUrl = jsonNode.get("order_data").asText();
                     // 更新上游单号
                     PaymentUpdateThirdInfoRequest updateInfoReq = new PaymentUpdateThirdInfoRequest();
                     updateInfoReq.setId(orderId);
@@ -135,7 +154,7 @@ public class WePayService extends AbstractPaymentService {
                     result.put("content", payUrl);
                     return result;
                 } else {
-                    String msg = jsonNode.get("tradeMsg").asText();
+                    String msg = jsonNode.get("errMsg").asText();
                     if (!StringUtils.isBlank(msg)) {
                         throw new ServerException(BusinessErrorConstants.ERROR_PAYMENT_REQUEST_FAIL_WITH_MSG, new String[]{msg});
                     } else {
@@ -148,24 +167,43 @@ public class WePayService extends AbstractPaymentService {
         } catch (ServerException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.error("wepay payment failed!", ex);
+            log.error("wepay add payment failed!", ex);
             throw new ServerException(BusinessErrorConstants.ERROR_PAYMENT_REQUEST_FAIL);
         }
     }
 
+    private String signRsA(String param,String priKey) throws Exception {
+//        Map<String, String> retMap = RsaUtil.genKeyPair();
+//        //String pubKey = retMap.get("pubKey");
+//        String priKey = retMap.get("priKey");
+        String priCipherText = RsaUtil.encryptByPrivate(param, priKey);
+        priCipherText = URLEncoder.encode(priCipherText,"UTF-8");
+
+//        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+//        generator.initialize(1024);
+//        KeyPair keyPair = generator.generateKeyPair();
+//        String privateKey = Base64Utils.encodeToString(keyPair.getPrivate().getEncoded());
+//        String publicKey = Base64Utils.encodeToString(keyPair.getPublic().getEncoded());
+//        // 使用私钥加密
+//        String encryptText = RsaSecretUtils.privateKeyEncrypt(param, privateKey);
+        log.info("signRsa encryptText:{}",priCipherText);
+        return priCipherText;
+    }
+
     @Override
     public PayCallbackHandleResult payCallback(PaymentApiConfigDTO payApiConfig, Map<String, String> data) {
-        log.info("wepay payment callback: {}", data);
+        log.info("**************************8wepay add payment callback: {}", data);
         PayCallbackHandleResult result = new PayCallbackHandleResult();
         // 验证签名
         String sign = data.get("sign");
         data.remove("sign");
         data.remove("signType");
         TreeMap<String, Object> checkMap = new TreeMap<>(data);
+       //String checkSign = RsaUtil.decryptByPublic(sign, payApiConfig.getPublicKey());
         String checkSign = EncryptUtil.getMD5(mapToQueryString(checkMap) + "&key=" + payApiConfig.getSecretKey()).toLowerCase();
         if (sign.equalsIgnoreCase(checkSign)) {
-            String status = data.get("tradeResult");
-            if ("1".equals(status)) {
+            String status = data.get("status");
+            if ("SUCCESS".equalsIgnoreCase(status)) {
                 result.setPaySuccess(true);
                 result.setRealMoney(new BigDecimal(data.get("amount")));
             } else {
@@ -264,9 +302,6 @@ public class WePayService extends AbstractPaymentService {
     }
 
 	private String cutRemark(String remark){
-        if (StringUtils.isBlank(remark)){
-            return "";
-        }
 		return StringUtils.trim(remark.replace("withdraw", ""));
 	}
 

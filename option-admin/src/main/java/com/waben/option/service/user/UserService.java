@@ -1,9 +1,12 @@
 package com.waben.option.service.user;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
+import com.waben.option.common.interfaces.user.UserAPI;
+import com.waben.option.common.model.dto.user.UserInviteTreeDTO;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,9 @@ public class UserService {
 
     @Resource
     private ModelMapper modelMapper;
+
+    @Resource
+    private UserAPI userAPI;
 
     public UserVO register(ClientRegisterUserRequest clientRequest) {
         RegisterUserRequest request = modelMapper.map(clientRequest, RegisterUserRequest.class);
@@ -86,6 +92,10 @@ public class UserService {
         return CloneUtils.copy(pageInfo, UserVO.class);
     }
 
+    public Map<String,Integer> queryUserCount(UserPageQuery userQuery) {
+        return adminUserAPI.queryUserCount(userQuery);
+    }
+
     public Boolean verifyUsername(String username) {
         return adminUserAPI.verifyUsername(username);
     }
@@ -105,6 +115,14 @@ public class UserService {
 
     public List<UserTreeNodeDTO> queryUserTreeNode(Long userId) {
         return adminUserAPI.queryUserTreeNode(userId);
+    }
+
+    public List<UserInviteTreeDTO> queryUserTreeNode(Long userId, int level) {
+        return userAPI.queryUserTreeNode(userId, level);
+    }
+
+    public PageInfo<UserInviteTreeDTO> queryUserTreeNodeNew(Long userId, int level, Long childUserId, int page ,int size) {
+        return userAPI.queryUserTreeNodeNew(userId, level,childUserId,page,size);
     }
 
     public void resetLoginPassword(Long userId, String password) {

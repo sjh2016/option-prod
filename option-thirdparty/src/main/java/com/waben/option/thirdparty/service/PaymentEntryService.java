@@ -95,6 +95,7 @@ public class PaymentEntryService {
 
 	private PaymentApiConfigDTO.PaymentMethodDTO verifyChannelEnable(PaymentPassagewayDTO passageway,
 			PaymentApiConfigDTO payApiConfig) {
+		log.info("payApiConfig beanName:{}",payApiConfig.getBeanName());
 		if (!payApiConfig.getEnable()) {
 			throw new ServerException(2012);
 		}

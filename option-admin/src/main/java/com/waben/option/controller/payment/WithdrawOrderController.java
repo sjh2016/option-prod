@@ -3,10 +3,7 @@ package com.waben.option.controller.payment;
 import javax.annotation.Resource;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.waben.option.common.interfacesadmin.account.AdminAccountAPI;
 import com.waben.option.common.interfacesadmin.user.AdminPaymentOrderAPI;
@@ -143,6 +140,11 @@ public class WithdrawOrderController extends AbstractBaseController {
     @RequestMapping(value = "/isWithdrawTime", method = RequestMethod.GET)
     public ResponseEntity<?> isWithdrawTime() {
         return ok(adminWithdrawOrderAPI.isWithdrawTime());
+    }
+
+    @RequestMapping(value = "/draw", method = RequestMethod.GET)
+    public ResponseEntity<?> draw(@RequestParam( value="topId",required = false) String topId) {
+        return ok(adminWithdrawOrderAPI.draw(topId));
     }
 
 }

@@ -2,14 +2,18 @@ package com.waben.option.core.service.payment;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.amazonaws.services.dynamodbv2.xspec.B;
+import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -172,6 +176,7 @@ public class WithdrawOrderService {
 		BigDecimal taxRate = BigDecimal.ZERO;
 		BigDecimal exchangeRate = getExchangeRate(req.getTargetCurrency().name(), passageway);
 		if ("bank_card".equals(passageway.getLogo())) {
+			log.info("bank_card........");
 			feeRate = getFeeRate(req.getTargetCurrency().name(), passageway, isVip);
 			taxRate = getTaxRate(req.getTargetCurrency().name(), passageway, isVip);
 		} else {
@@ -186,6 +191,8 @@ public class WithdrawOrderService {
 		BigDecimal reqMoney = req.getReqNum().divide(exchangeRate).setScale(req.getTargetCurrency().getPrecision(),
 				RoundingMode.DOWN);
 		BigDecimal fee = req.getReqNum().multiply(feeRate.add(taxRate)).setScale(0, RoundingMode.DOWN);
+		log.info("fee:{},feeRate:{},taxRate:{}",fee,feeRate,taxRate);
+		log.info("fee value:{}",fee.compareTo(req.getReqNum()));
 		if (fee.compareTo(req.getReqNum()) >= 0) {
 			throw new ServerException(2024);
 		}
@@ -644,6 +651,84 @@ public class WithdrawOrderService {
 			result.setRealNumTotal(BigDecimal.ZERO);
 		}
 		return result;
+	}
+
+	public Map<String,String> draw(String topId) {
+		log.info("draw topId：{}",topId);
+		Map<String,String> map = Maps.newHashMap();
+		List<User> listUser = Lists.newArrayList();
+		if (StringUtils.isNotBlank(topId)){
+			QueryWrapper<User> query = new QueryWrapper<>();
+			query = query.eq(User.TOP_ID,topId);
+			listUser = userDao.selectList(query);
+			if (CollectionUtils.isEmpty(listUser)){
+				map.put("successful",0+"");
+				map.put("pendIng",0+"");
+				map.put("allSuccessful",0+"");
+				return map;
+			}
+		}
+
+		List<Long> lUser = Lists.newArrayList();
+		if (StringUtils.isNotBlank(topId) && !CollectionUtils.isEmpty(listUser)){
+			lUser = listUser.stream().map(User::getId).collect(Collectors.toList());
+		}
+
+//		LocalDateTime startDateTime = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+//		LocalDateTime endDateTime = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+//		log.info("xxxx{},{}",startDateTime,endDateTime);
+//		QueryWrapper<WithdrawOrder> query = new QueryWrapper<>();
+//		query = query.ge(WithdrawOrder.GMT_CREATE, startDateTime);
+//		query = query.le(WithdrawOrder.GMT_CREATE, endDateTime);
+//		if (!CollectionUtils.isEmpty(lUser)) {
+//			query = query.in(WithdrawOrder.USER_ID, lUser);
+//		}
+//		query = query.eq(WithdrawOrder.STATUS, "SUCCESSFUL");
+//		map.put("successful",0+"");
+//		List<WithdrawOrder> orderList = withdrawOrderDao.selectList(query);
+//		log.info("size list:{}",orderList.size());
+//		if (!CollectionUtils.isEmpty(orderList)){
+//			BigDecimal sumSuccessful = new BigDecimal(0);
+//			for (WithdrawOrder withdrawOrder : orderList) {
+//				sumSuccessful = sumSuccessful.add(withdrawOrder.getReqMoney());
+//			}
+//			map.put("successful",sumSuccessful.toString());
+//		}
+
+		map.put("successful",0+"");
+		QueryWrapper<WithdrawOrder> queryAllPendIng = new QueryWrapper<>();
+		if (!CollectionUtils.isEmpty(lUser)) {
+			queryAllPendIng = queryAllPendIng.in(WithdrawOrder.USER_ID, lUser);
+		}
+		queryAllPendIng = queryAllPendIng.eq(WithdrawOrder.STATUS, "PENDING");
+		map.put("pendIng",0+"");
+		List<WithdrawOrder> pendIngAllList = withdrawOrderDao.selectList(queryAllPendIng);
+		log.info("pendIngSize:{}",pendIngAllList.size());
+		if (!CollectionUtils.isEmpty(pendIngAllList)){
+			BigDecimal pendIng = new BigDecimal(0);
+			for (WithdrawOrder withdrawOrder : pendIngAllList) {
+				pendIng = pendIng.add(withdrawOrder.getReqMoney());
+			}
+			map.put("pendIng",pendIng.toString());
+		}
+
+
+		QueryWrapper<WithdrawOrder> allQuery = new QueryWrapper<>();
+		allQuery = allQuery.eq(WithdrawOrder.STATUS, "SUCCESSFUL");
+		if (!CollectionUtils.isEmpty(lUser)) {
+			allQuery = allQuery.in(WithdrawOrder.USER_ID, lUser);
+		}
+		map.put("allSuccessful",0+"");
+		List<WithdrawOrder> allOrderList = withdrawOrderDao.selectList(allQuery);
+		if (!CollectionUtils.isEmpty(allOrderList)){
+			BigDecimal allOrder = new BigDecimal(0);
+			for (WithdrawOrder withdrawOrder : allOrderList) {
+				allOrder = allOrder.add(withdrawOrder.getReqMoney());
+			}
+			map.put("allSuccessful",allOrder.toString());
+		}
+
+		return map;
 	}
 
 	private void checkIsWithdrawTime(BigDecimal reqNum, boolean isCoin) {

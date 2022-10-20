@@ -448,6 +448,27 @@ public class PaymentCallbackController extends AbstractBaseController {
         }
     }
 
+    @PostMapping("/wepay/add/payCallback")
+    public void wepayAddPayCallback(HttpServletRequest request, HttpServletResponse response) {
+        log.info("wepay add pay callback......");
+        try {
+            Map<String, String> data = parameterToMap(request);
+            log.info("wepay add pay callback data: " + (data != null ? data : "null"));
+           String orderNo = data.get("mchOrderNo");
+           String backData = paymentAPI.payCallback(false, orderNo, null, data);
+
+            log.info("wepay  add pay callback return to up: " + backData);
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("text/plain;charset=utf-8");
+            PrintWriter writer = response.getWriter();
+            writer.print(backData != null ? backData : "");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
     @PostMapping("/wepay/withdrawCallback")
     public void wepayWithdrawCallback(HttpServletRequest request, HttpServletResponse response) {
         log.info("wepay withdraw callback......");

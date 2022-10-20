@@ -7,6 +7,7 @@ import com.waben.option.thirdparty.service.sms.AbstractBaseSmsService;
 import com.waben.option.thirdparty.service.sms.SendBeanService;
 import com.waben.option.thirdparty.service.sms.huaweiyun.HuaWeiSmsService;
 import com.waben.option.thirdparty.service.tencent.DescribeCaptchaService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 
+@Slf4j
 @RefreshScope
 @RestController
 @RequestMapping("/sms")
@@ -36,6 +38,9 @@ public class SmsController extends AbstractBaseController {
 
 	@Value("${smsBeanName}")
 	private String smsBeanName;
+
+	@Value("${onbukaBeanName}")
+	private String onbukaBeanName;
 
 	/**
 	 * 滑块验证码
@@ -58,6 +63,17 @@ public class SmsController extends AbstractBaseController {
 	@RequestMapping(value = "/send", method = RequestMethod.GET)
 	public ResponseEntity<?> sendCode(String areaCode, String username, String code, EmailTypeEnum type, String content,
 			String ip) {
+
+
+		if (type !=null && "ONBUKA".equalsIgnoreCase(type.name())){
+			log.info("-->in onbuka:{}",onbukaBeanName);
+			AbstractBaseSmsService onbukaService = SpringContext.getBean(onbukaBeanName, AbstractBaseSmsService.class);
+			onbukaService.sendCode(areaCode, username, code, content, ip);
+			log.info("-->in onbukaService:");
+			return ok();
+		}
+
+
 		if (type != null) {
 			AbstractBaseSmsService emailService = SpringContext.getBean(emailBeanName, AbstractBaseSmsService.class);
 			emailService.sendCode(username, code, type, content, ip);
@@ -72,6 +88,14 @@ public class SmsController extends AbstractBaseController {
 			// SpringContext.getBean(GlobalSmsService.class).sendCode(areaCode, username, code, content, ip);
 			// SpringContext.getBean(Sms230SmsService.class).sendCode(areaCode, username, code, content, ip);
 		}
+		return ok();
+	}
+
+	@RequestMapping(value = "/send/onbuka", method = RequestMethod.GET)
+	public ResponseEntity<?> sendCodeV2(String areaCode, String username, String code, EmailTypeEnum type, String content,
+									  String ip) {
+		AbstractBaseSmsService onbukaService = SpringContext.getBean(onbukaBeanName, AbstractBaseSmsService.class);
+		onbukaService.sendCode(areaCode, username, code, content, ip);
 		return ok();
 	}
 

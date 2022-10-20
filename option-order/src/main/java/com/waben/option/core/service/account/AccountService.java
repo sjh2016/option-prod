@@ -72,6 +72,10 @@ public class AccountService {
                 BigDecimal amount = transactionBean.getAmount();
                 Long statementId = idWorker.nextId();
                 Account account = accountMap.get(transactionBean.getCurrency());
+                log.info("transactionBean currency:{},getType:{},account:{}",transactionBean.getCurrency(),transactionBean.getType().getCreditDebitType(),account);
+                if (null == account){
+                    continue;
+                }
                 switch (transactionBean.getType().getCreditDebitType()) {
                     case CREDIT:
                         amount = credit(account, transactionBean);
@@ -86,8 +90,11 @@ public class AccountService {
                         amount = unfreeze(account, transactionBean);
                         break;
                 }
+                log.info("transactionBean amount:{},obj:{}",amount,JSON.toJSONString(account));
                 accountDao.updateById(account);
+                log.info("transactionBean account update End");
                 saveAccountStatement(userId, statementId, transactionBean, amount, account);
+                log.info("transactionBean saveAccountStatement End");
 //				String key = RedisKey.getKey(RedisKey.OPTION_USER_ACCOUNT_KEY, userId);
 //				redisTemplate.opsForValue().set(key, account);
             }
@@ -106,6 +113,10 @@ public class AccountService {
                 BigDecimal amount = transactionBean.getAmount();
                 Long statementId = idWorker.nextId();
                 Account account = accountMap.get(transactionBean.getCurrency());
+                if (account == null){
+                    log.warn("accountService transactionComm method account is empty");
+                    continue;
+                }
                 switch (transactionBean.getType().getCreditDebitType()) {
                     case CREDIT:
                         amount = creditComm(account, transactionBean, level);
@@ -130,7 +141,7 @@ public class AccountService {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Transactional(rollbackFor = Exception.class)
-    private void saveAccountStatement(Long userId, Long statementId, AccountTransactionBean transactionBean,
+    public void saveAccountStatement(Long userId, Long statementId, AccountTransactionBean transactionBean,
                                       BigDecimal amount, Account account) {
         AccountStatement statement = new AccountStatement();
         statement.setId(statementId);
@@ -184,11 +195,12 @@ public class AccountService {
 
     @Transactional(rollbackFor = Exception.class)
     BigDecimal creditComm(Account account, AccountTransactionBean transactionBean, int level) {
+        if (null == transactionBean) {
+            log.info("保存记录信息为空，返回计算金额0");
+            return BigDecimal.ZERO;
+        }
         try {
-            if (null == transactionBean) {
-                log.info("保存记录信息为空，返回计算金额0");
-                return BigDecimal.ZERO;
-            }
+
             if (null == transactionBean.getAmount()) {
                 transactionBean.setAmount(BigDecimal.ZERO);
             }

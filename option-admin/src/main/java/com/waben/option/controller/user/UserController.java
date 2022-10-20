@@ -35,6 +35,9 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.logging.Logger;
 
 @Slf4j
@@ -169,6 +172,18 @@ public class UserController extends AbstractBaseController {
 		return ok(userService.queryUserTreeNode(getCurrentUserId()));
 	}
 
+
+	@ApiOperation("获取分销用户列表信息目前到4级")
+	@RequestMapping(value = "/queryUserTreeNode/new", method = RequestMethod.GET)
+	public ResponseEntity<?> queryUserTreeNodeNew(@RequestParam("userId") Long  userId,
+												  @RequestParam("level") int level,
+												  @RequestParam(value = "childUserId",required = false) Long childUserId,
+												  @RequestParam(value = "page",required = false) int page,
+												  @RequestParam(value = "size",required = false) int size) {
+		return ok(userService.queryUserTreeNodeNew(userId, level,childUserId,page,size));
+	}
+
+
 	@RequestMapping(value = "/reset/login/password", method = RequestMethod.GET)
 	public ResponseEntity<?> resetLoginPassword(@RequestParam("userId") Long userId,
 			@RequestParam("password") String password) {
@@ -201,5 +216,21 @@ public class UserController extends AbstractBaseController {
 		log.info("queryUserInvitePeople 结束 userInvitePeopleDTO={}",userInvitePeopleDTO);
 		return ok(userInvitePeopleDTO);
 	}
+
+
+	@RequestMapping(value = "/queryCount", method = RequestMethod.GET)
+	public ResponseEntity<?> queryCount(@RequestParam(value = "topId", required = false) String topId) {
+		UserPageQuery userQuery = new UserPageQuery();
+		userQuery.setAuthorityType(AuthorityEnum.CLIENT);
+		LocalDateTime startDateTime = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+		LocalDateTime endDateTime = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
+		userQuery.setRegisterStart(startDateTime);
+		userQuery.setRegisterEnd(endDateTime);
+		userQuery.setTopId(topId);
+		return ok(userService.queryUserCount(userQuery));
+	}
+
+
+
 
 }

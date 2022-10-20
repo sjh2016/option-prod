@@ -226,7 +226,7 @@ public class UserService {
 //                throw new ServerException(1061);
 //            }
 //        }
-//        verifyRegisterParameter(request);
+       verifyRegisterParameter(request);
         List<User> userList = userDao.selectList(new QueryWrapper<User>().eq(User.USERNAME, request.getUsername()));
         if (!CollectionUtils.isEmpty(userList)) {
             if (request.getRegisterType() == RegisterEnum.EMAIL) {
@@ -365,15 +365,15 @@ public class UserService {
     }
 
     private void verifyRegisterParameter(RegisterUserRequest request) {
-        String[] activeProfiles = env.getActiveProfiles();
-        if ("prod".equals(activeProfiles[0])) {
-            int registerIpCount = registerIpCount(request.getIp());
-            if (registerIpCount > 10)
-                throw new ServerException(1061);
-        }
-//        if (request.getVerifyCode() != null && request.getRegisterType() != RegisterEnum.PHONE) {
-//            smsAPI.verifyCode(request.getUsername(), request.getVerifyCode());
+//        String[] activeProfiles = env.getActiveProfiles();
+//        if ("prod".equals(activeProfiles[0])) {
+//            int registerIpCount = registerIpCount(request.getIp());
+//            if (registerIpCount > 10)
+//                throw new ServerException(1061);
 //        }
+        if (request.getVerifyCode() != null ) {
+            smsAPI.verifyCode(request.getUsername(), request.getVerifyCode());
+        }
 //        if (request.getRegisterType() == RegisterEnum.PHONE) {
 //            if (request.getVerifyCode() == null)
 //                throw new ServerException(1026);
@@ -908,8 +908,59 @@ public class UserService {
         return list;
     }
 
+    public PageInfo<UserInviteTreeDTO> queryUserTreeNodeRebuildNew(Long userId, int level, Long childUserId,int page,int size) {
+        PageInfo<UserInviteTreeDTO> list = converToTreeNodeDtoNew(userId, level, childUserId,page,size);
+        if (null != list.getRecords()) {
+            for (UserInviteTreeDTO inviteTreeDTO : list.getRecords()) {
+                sta(inviteTreeDTO);
+            }
+        }
+        return list;
+    }
+
     public List<UserInviteTreeDTO> converToTreeNodeDto(Long userId, int queryLevel, String inviteAuditStatus) {
         return activityUserJoinDao.queryList(userId, queryLevel, inviteAuditStatus);
+    }
+
+    public PageInfo<UserInviteTreeDTO> converToTreeNodeDtoNew(Long userId, int queryLevel, Long childUserId,int page, int size) {
+
+        PageInfo<UserInviteTreeDTO> pageInfo = new PageInfo<>();
+        if (queryLevel == 1) {
+            int count = activityUserJoinDao.queryListDemoLevelCount(userId,childUserId);
+            if (count>0) {
+                List<UserInviteTreeDTO> treeDTOList = activityUserJoinDao.queryListDemoLevel(userId, page, size,childUserId);
+                pageInfo.setRecords(treeDTOList);
+                pageInfo.setTotal(count);
+                pageInfo.setPage(page);
+                pageInfo.setSize(size);
+                return pageInfo;
+            }
+        }
+
+        if (queryLevel == 2) {
+            int count = activityUserJoinDao.queryListDemoLeve2Count(userId,childUserId);
+            if (count>0){
+                List<UserInviteTreeDTO> treeDTOList = activityUserJoinDao.queryListDemoLeve2(userId, page, size,childUserId);
+                pageInfo.setRecords(treeDTOList);
+                pageInfo.setTotal(count);
+                pageInfo.setPage(page);
+                pageInfo.setSize(size);
+                return pageInfo;
+            }
+        }
+
+        if (queryLevel == 3) {
+            int count = activityUserJoinDao.queryListDemoLeve3Count(userId,childUserId);
+            if(count>0){
+                List<UserInviteTreeDTO> treeDTOList = activityUserJoinDao.queryListDemoLeve3(userId, page, size,childUserId);
+                pageInfo.setRecords(treeDTOList);
+                pageInfo.setTotal(count);
+                pageInfo.setPage(page);
+                pageInfo.setSize(size);
+                return pageInfo;
+            }
+        }
+        return pageInfo;
     }
 
     /**

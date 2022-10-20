@@ -41,6 +41,10 @@ public class CodeService {
         smsAPI.sendCode(areaCode, username, NumberUtil.generateCode(6), type, content, ip);
     }
 
+    public void sendV2(String areaCode, String username, EmailTypeEnum type, String content, String ip) {
+        smsAPI.sendCodeV2(areaCode, username, NumberUtil.generateCode(6), type, content, ip);
+    }
+
     public void verify(String mobilePhone, String code) {
         smsAPI.verifyCode(mobilePhone, code);
     }

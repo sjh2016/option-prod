@@ -185,6 +185,8 @@ public class WithdrawOrderService {
 		BigDecimal reqMoney = req.getReqNum().divide(exchangeRate).setScale(req.getTargetCurrency().getPrecision(),
 				RoundingMode.DOWN);
 		BigDecimal fee = req.getReqNum().multiply(feeRate.add(taxRate)).setScale(0, RoundingMode.DOWN);
+		log.info("fee:{},feeRate:{},taxRate:{}",fee,feeRate,taxRate);
+		log.info("fee value:{}",fee.compareTo(req.getReqNum()));
 		if (fee.compareTo(req.getReqNum()) >= 0) {
 			throw new ServerException(2024);
 		}

@@ -111,6 +111,11 @@ public class UserController extends AbstractBaseController {
         return ok(userService.queryUserPage(userQuery));
     }
 
+    @RequestMapping(value = "/queryUserCount", method = RequestMethod.POST)
+    public ResponseEntity<?> queryUserCount(@RequestBody UserPageQuery userQuery) {
+        return ok(userService.queryUserCount(userQuery));
+    }
+
     @RequestMapping(method = RequestMethod.GET, value = "/query")
     public ResponseEntity<?> queryUser(@RequestParam("id") Long id) {
         return ok(userService.queryUser(id));

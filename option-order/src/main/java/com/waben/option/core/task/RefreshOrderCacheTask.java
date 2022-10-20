@@ -14,7 +14,8 @@ public class RefreshOrderCacheTask {
     @Resource
     private SettlementService settlementService;
 
-    @Scheduled(cron = "0 0 23 * * ?")
+     @Scheduled(cron = "0 0 23 * * ?")
+    //@Scheduled(cron = "0 */10 * * * ?")
     public void schedule() {
         settlementService.settlement();
     }

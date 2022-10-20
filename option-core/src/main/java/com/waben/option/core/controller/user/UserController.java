@@ -145,6 +145,14 @@ public class UserController extends AbstractBaseController {
         return ok(userService.queryUserTreeNodeRebuild(userId, level, inviteAuditStatus));
     }
 
+    @RequestMapping(method = RequestMethod.GET, value = "/queryUserTreeNodeNew")
+    public ResponseEntity<?> queryUserTreeNodeNew(@RequestParam("userId") Long userId, @RequestParam("level") int level,
+                                               @RequestParam(value = "childUserId", required = false) Long childUserId,
+                                                  @RequestParam(value = "page", required = false) Integer page,
+                                                  @RequestParam(value = "size", required = false) Integer size) {
+        return ok(userService.queryUserTreeNodeRebuildNew(userId, level, childUserId, page, size));
+    }
+
     @RequestMapping(method = RequestMethod.GET, value = "/invitePeopleByUsers")
     public ResponseEntity<?> invitePeopleByUsers(@RequestParam("symbol") String symbol) {
         return ok(userService.invitePeopleByUsers(symbol));

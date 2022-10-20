@@ -4,8 +4,10 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -13,6 +15,10 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.google.api.client.util.Lists;
+import com.google.common.collect.Maps;
+import com.waben.option.data.entity.payment.PaymentOrder;
+import com.waben.option.data.repository.payment.PaymentOrderDao;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
@@ -94,6 +100,8 @@ public class UserService {
 
 	@Resource
 	private UserDao userDao;
+	@Resource
+	private PaymentOrderDao paymentOrderDao;
 
 	@Resource
 	private UserStaDao userStaDao;
@@ -648,6 +656,7 @@ public class UserService {
 	public PageInfo<UserDTO> queryUserPage(UserPageQuery userQuery) {
 		QueryWrapper<User> query = new QueryWrapper<>();
 		if (!CollectionUtils.isEmpty(userQuery.getIdList())) {
+			log.info("query param idList:");
 			query = query.in(User.ID, userQuery.getIdList());
 		}
 		if (StringUtils.isNotEmpty(userQuery.getUsername())) {
@@ -656,6 +665,7 @@ public class UserService {
 
 		}
 		if (StringUtils.isNotEmpty(userQuery.getTopId())){
+			log.info("query param topId:{}",userQuery.getTopId());
 			query = query.eq(User.TOP_ID,userQuery.getTopId());
 		}
 		if (userQuery.getRegisterStart() != null) {
@@ -1126,5 +1136,80 @@ public class UserService {
 		}
 		return result;
 	}
+
+	public Map<String,Integer> queryUserCount(UserPageQuery userQuery) {
+
+		Map<String,Integer> map = Maps.newHashMap();
+		QueryWrapper<User> query = new QueryWrapper<>();
+		if (userQuery.getRegisterStart() != null) {
+			query = query.ge(User.GMT_CREATE, userQuery.getRegisterStart());
+		}
+		if (userQuery.getRegisterEnd() != null) {
+			query = query.le(User.GMT_CREATE, userQuery.getRegisterEnd());
+		}
+		if (StringUtils.isNotBlank(userQuery.getTopId())){
+			query = query.eq(User.TOP_ID,userQuery.getTopId());
+		}
+		//query = query.orderByDesc(User.GMT_CREATE);
+		int registerCount = userDao.selectCount(query);
+		map.put("registerCount",registerCount);
+		QueryWrapper<PaymentOrder> paymentOrder = new QueryWrapper<>();
+		if (userQuery.getRegisterStart() != null) {
+			paymentOrder = paymentOrder.ge(PaymentOrder.GMT_CREATE, userQuery.getRegisterStart());
+		}
+		if (userQuery.getRegisterEnd() != null) {
+			paymentOrder = paymentOrder.le(PaymentOrder.GMT_CREATE, userQuery.getRegisterEnd());
+		}
+		List<User> listUser = Lists.newArrayList();
+		if (StringUtils.isNotBlank(userQuery.getTopId())){
+
+			QueryWrapper<User> queryNewTopId = new QueryWrapper<>();
+			if (StringUtils.isNotBlank(userQuery.getTopId())){
+				queryNewTopId = queryNewTopId.eq(User.TOP_ID,userQuery.getTopId());
+			}
+			listUser = userDao.selectList(queryNewTopId);
+			if (CollectionUtils.isEmpty(listUser)){
+				map.put("firstRechargeCount",0);
+				map.put("allRechargeCount",0);
+				return map;
+			}
+		}
+
+
+		List<Long> userIdList = Lists.newArrayList();
+		if (!CollectionUtils.isEmpty(listUser)) {
+			userIdList = listUser.stream().map(User::getId).collect(Collectors.toList());
+		}
+		if (!CollectionUtils.isEmpty(userIdList)) {
+			paymentOrder = paymentOrder.in(PaymentOrder.USER_ID, userIdList);
+		}
+		paymentOrder = paymentOrder.eq(PaymentOrder.STATUS, "SUCCESS");
+		List<PaymentOrder> orderList = paymentOrderDao.selectList(paymentOrder);
+
+		map.put("firstRechargeCount",!CollectionUtils.isEmpty(orderList)?	orderList.stream().collect(Collectors.groupingBy(PaymentOrder::getUserId)).size():0);
+		String dateStr = "2022-09-03 00:00:00";
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		LocalDateTime parsedDate = LocalDateTime.parse(dateStr, formatter);
+		QueryWrapper<PaymentOrder> paymentOrderAll = new QueryWrapper<>();
+		paymentOrderAll = paymentOrderAll.ge(PaymentOrder.GMT_CREATE, parsedDate);
+		paymentOrderAll = paymentOrderAll.eq(PaymentOrder.STATUS, "SUCCESS");
+		if (!CollectionUtils.isEmpty(userIdList)) {
+			paymentOrderAll = paymentOrderAll.in(PaymentOrder.USER_ID, userIdList);
+		}
+		map.put("allSum",0);
+		List<PaymentOrder> orderListAll = paymentOrderDao.selectList(paymentOrderAll);
+		if (!CollectionUtils.isEmpty(orderListAll)){
+			BigDecimal big = new BigDecimal(0);
+			for (PaymentOrder order : orderListAll) {
+				big =  big.add(order.getReqNum());
+			}
+			map.put("allSum",big.intValue());
+		}
+
+		map.put("allRechargeCount",!CollectionUtils.isEmpty(orderListAll)?orderListAll.stream().collect(Collectors.groupingBy(PaymentOrder::getUserId)).size():0);
+		return map;
+	}
+
+
 
 }

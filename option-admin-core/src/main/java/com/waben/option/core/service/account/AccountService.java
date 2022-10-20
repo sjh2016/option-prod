@@ -1,6 +1,7 @@
 package com.waben.option.core.service.account;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.google.common.collect.Maps;
 import com.waben.option.common.amqp.AMQPMessage;
 import com.waben.option.common.component.IdWorker;
 import com.waben.option.common.constants.RabbitMessageQueue;
@@ -20,9 +21,11 @@ import com.waben.option.core.service.statement.AccountStatementService;
 import com.waben.option.data.entity.user.Account;
 import com.waben.option.data.entity.user.AccountStatement;
 import com.waben.option.data.entity.user.User;
+import com.waben.option.data.entity.user.UserSta;
 import com.waben.option.data.repository.BaseRepository;
 import com.waben.option.data.repository.user.AccountDao;
 import com.waben.option.data.repository.user.UserDao;
+import com.waben.option.data.repository.user.UserStaDao;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -61,6 +64,8 @@ public class AccountService {
 
 	@Resource
 	private ModelMapper modelMapper;
+	@Resource
+	private UserStaDao userStaDao;
 
 	@Resource
 	private RedisTemplate<Serializable, Object> redisTemplate;
@@ -272,9 +277,30 @@ public class AccountService {
 		if (currency != null) {
 			queryWrapper = queryWrapper.eq(Account.CURRENCY, currency);
 		}
+
+		QueryWrapper<User> queryWrapperUser = new QueryWrapper<>();
+		queryWrapperUser.in("userId",uidList);
+		List<User> userList = userDao.selectList(queryWrapperUser);
+		Map<Long,String> ma = Maps.newHashMap();
+		for (User user : userList) {
+			ma.put(user.getId(),user.getUid());
+		}
+
 		List<Account> userAccountList = accountDao.selectList(queryWrapper);
-		return userAccountList.stream().map(userAccount -> modelMapper.map(userAccount, UserAccountDTO.class))
+
+		List<UserAccountDTO> userAccountDTOS = userAccountList.stream().map(userAccount -> modelMapper.map(userAccount, UserAccountDTO.class))
 				.collect(Collectors.toList());
+
+		for (UserAccountDTO userAccountDTO : userAccountDTOS) {
+			Long userId = userAccountDTO.getUserId();
+			String uid = ma.get(userId);
+			QueryWrapper<UserSta> queryWrapperUserSta = new QueryWrapper<>();
+			queryWrapperUserSta.eq("uid",uid);
+			UserSta sta = userStaDao.selectOne(queryWrapperUserSta);
+			userAccountDTO.setTotalRechargeAmount(sta.getTotalRechargeAmount());
+		}
+
+		return userAccountDTOS;
 	}
 
 	public UserAccountDTO queryAccount(Long userId) {

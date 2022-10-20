@@ -36,4 +36,6 @@ public interface AccountDao extends BaseRepository<Account> {
             "user_id=#{userId}", "</script>"})
     BigDecimal queryLevelCount(@Param("userId") Long userId);
 
+
+
 }

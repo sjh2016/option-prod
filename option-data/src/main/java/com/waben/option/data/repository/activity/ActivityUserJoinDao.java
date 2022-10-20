@@ -32,4 +32,47 @@ public interface ActivityUserJoinDao extends BaseRepository<ActivityUserJoin> {
     List<UserInviteTreeDTO> queryList(@Param("userId") long userId, @Param("level") int level, @Param(
             "inviteAuditStatus") String inviteAuditStatus);
 
+
+
+    @Select("SELECT count(1)" +
+            " FROM `t_u_user` b" +
+            " WHERE b.parent_id = #{userId}")
+    Integer queryListDemoLevelCount(@Param("userId") Long userId,@Param("childUserId") Long childUserId);
+
+
+    @Select("SELECT b.id,b.username,b.mobile_phone AS mobilePhone,b.email,b.nickname,b.symbol,b.symbol_code AS symbolCode,b.parent_id AS parentId,b.group_index AS groupIndex" +
+            " FROM `t_u_user` b" +
+            " WHERE b.parent_id = #{userId} limit #{page},#{size}")
+    List<UserInviteTreeDTO> queryListDemoLevel(@Param("userId") Long userId,@Param("page") Integer page,@Param("size") Integer size,@Param("childUserId") Long childUserId);
+
+
+
+    @Select("SELECT count(1)" +
+            " FROM `t_u_user` b" +
+            " LEFT JOIN `t_u_user` c ON c.id=b.parent_id" +
+            " WHERE c.parent_id=#{userId}")
+    Integer queryListDemoLeve2Count(@Param("userId") Long userId,@Param("childUserId") Long childUserID);
+
+    @Select("SELECT b.id,b.username,b.mobile_phone AS mobilePhone,b.email,b.nickname,b.symbol,b.symbol_code AS symbolCode,b.parent_id AS parentId,b.group_index AS groupIndex" +
+            " FROM `t_u_user` b" +
+            " LEFT JOIN `t_u_user` c ON c.id=b.parent_id" +
+            " WHERE c.parent_id=#{userId} limit #{page},#{size}")
+    List<UserInviteTreeDTO> queryListDemoLeve2(@Param("userId") Long userId,@Param("page") Integer page,@Param("size") Integer size,@Param("childUserId") Long childUserId);
+
+
+    @Select("SELECT count(1)" +
+            " FROM `t_u_user` b" +
+            " LEFT JOIN `t_u_user` c ON c.id=b.parent_id" +
+            " LEFT JOIN `t_u_user` d ON d.id=c.parent_id" +
+            " WHERE d.parent_id=#{userId} ")
+    Integer  queryListDemoLeve3Count(@Param("userId") Long userId,@Param("childUserId") Long childUserId);
+
+    @Select("SELECT b.id,b.username,b.mobile_phone AS mobilePhone,b.email,b.nickname,b.symbol,b.symbol_code AS symbolCode,b.parent_id AS parentId,b.group_index AS groupIndex" +
+            " FROM `t_u_user` b" +
+            " LEFT JOIN `t_u_user` c ON c.id=b.parent_id" +
+            " LEFT JOIN `t_u_user` d ON d.id=c.parent_id" +
+            " WHERE d.parent_id=#{userId} limit #{page},#{size}")
+    List<UserInviteTreeDTO> queryListDemoLeve3(@Param("userId") Long userId,@Param("page") Integer page,@Param("size") Integer size,@Param("childUserId") Long childUserIdss);
+
+
 }

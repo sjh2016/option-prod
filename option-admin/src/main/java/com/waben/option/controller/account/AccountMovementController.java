@@ -34,7 +34,7 @@ public class AccountMovementController extends AbstractBaseController {
      * 申请上下分
      */
     @ApiOperation("申请上下分")
-    @RequestMapping(value = "/apply", method = RequestMethod.POST)
+    @RequestMapping(value = "/apply/tt", method = RequestMethod.POST)
     public ResponseEntity<?> apply(@RequestBody UserAccountMovementApplyRequest req) {
         adminAccountMovementAPI.apply(req.getUserId(), req);
         return ok();

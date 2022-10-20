@@ -135,4 +135,34 @@ public class CodeController extends AbstractBaseController {
 		return ok();
 	}
 
+
+
+	@ApiOperation(value = "发送短信/邮件")
+	@Validated
+	@RequestMapping(value = "/sms/send/encrypt/v2", method = RequestMethod.POST)
+	public ResponseEntity<?> sendEncryptV2(@RequestBody String encryptJson) {
+		// 解密数据
+		String json = null;
+		try {
+			if (encryptJson != null) {
+				encryptJson = encryptJson.trim();
+			}
+			json = AesEncryptUtil.decrypt(encryptJson);
+		} catch (Exception ex) {
+			log.error("sms send decrypt failed:" + encryptJson);
+			throw new ServerException(BusinessErrorConstants.ERROR_PARAM_FORMAT);
+		}
+		// 执行业务
+		log.info("encrypt sms send request: {}", json);
+		ClientSmsSendRequest request = JacksonUtil.decode(json, ClientSmsSendRequest.class);
+		if (request.getType() != null) {
+			// 验证邮箱，防止临时邮箱注册
+			if (!refreshConfig.checkRegisterEmailAllow(request.getUsername())) {
+				throw new ServerException(2063);
+			}
+		}
+		smsService.sendV2(request.getAreaCode(), request.getUsername(), request.getType(), null, getUserIp());
+		return ok();
+	}
+
 }

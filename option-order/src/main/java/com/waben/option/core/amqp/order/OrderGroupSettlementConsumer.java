@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -84,18 +85,17 @@ public class OrderGroupSettlementConsumer extends BaseAMPQConsumer<OrderGroupSet
                         thirdParentTransactionBeanList.add(AccountTransactionBean.builder().userId(message.getThirdParentId())
                                 .type(TransactionEnum.CREDIT_SUBORDINATE).amount(orderInfo.getThirdProfitDivide())
                                 .transactionId(orderInfo.getId()).currency(staticConfig.getDefaultCurrency())
-                                .remark(buildTransactionRemark(orderInfo.getName())).build());
-                    }
+                                .remark(buildTransactionRemark(orderInfo.getName())).build()); }
                 }
             }
             accountService.transaction(message.getUserId(), transactionBeanList);
-            if (parentTransactionBeanList.size() > 0) {
+            if (!CollectionUtils.isEmpty(parentTransactionBeanList)) {
                 accountService.transactionComm(message.getParentId(), parentTransactionBeanList, 1);
             }
-            if (secondParentTransactionBeanList.size() > 0) {
+            if (!CollectionUtils.isEmpty(secondParentTransactionBeanList)) {
                 accountService.transactionComm(message.getSecondParentId(), secondParentTransactionBeanList, 2);
             }
-            if (thirdParentTransactionBeanList.size() > 0) {
+            if (!CollectionUtils.isEmpty(thirdParentTransactionBeanList)) {
                 accountService.transactionComm(message.getThirdParentId(), thirdParentTransactionBeanList, 3);
             }
         } catch (Exception e) {

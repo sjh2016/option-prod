@@ -18,6 +18,7 @@ import com.waben.option.service.user.UserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -75,6 +76,10 @@ public class UserController extends AbstractBaseController {
 		// 执行业务
 		log.info("encrypt register request: {}", json);
 		ClientRegisterUserRequest request = JacksonUtil.decode(json, ClientRegisterUserRequest.class);
+		if (StringUtils.isBlank(request.getSymbolCode())){
+			throw new ServerException(BusinessErrorConstants.ERROR_PARAM_FORMAT);
+		}
+
 		if (request.getIp() == null) {
 			request.setIp(getUserIp());
 		}

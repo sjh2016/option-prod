@@ -51,4 +51,6 @@ public class UserAccountDTO {
      * 用户组
      */
     private Integer groupIndex;
+
+    private BigDecimal totalRechargeAmount;
 }

@@ -92,5 +92,10 @@ public class WithdrawOrderController extends AbstractBaseController {
     public ResponseEntity<?> isWithdrawTime() {
         return ok(service.isWithdrawTime());
     }
-    
+
+    @RequestMapping(value = "/draw", method = RequestMethod.POST)
+    public ResponseEntity<?> draw(@RequestParam(value="topId",required = false) String topId) {
+        return ok(service.draw(topId));
+    }
+
 }

@@ -85,6 +85,14 @@ public interface UserAPI extends BaseAPI {
     @RequestMapping(method = RequestMethod.GET, value = "/user/queryUserTreeNode")
     public Response<List<UserInviteTreeDTO>> _queryUserTreeNode(@RequestParam(value = "userId", required = false) Long userId, @RequestParam(value = "level", required = false) int level);
 
+    @RequestMapping(method = RequestMethod.GET, value = "/user/queryUserTreeNodeNew")
+    public Response<PageInfo<UserInviteTreeDTO>> _queryUserTreeNodeNew(@RequestParam(value = "userId", required = false) Long userId,
+                                                                   @RequestParam(value = "level", required = false) int level,
+                                                                   @RequestParam(value = "childUserId", required = false) Long childUserId,
+                                                                   @RequestParam(value = "page", required = false) int page,
+                                                                   @RequestParam(value = "size", required = false) int size);
+
+
     @RequestMapping(method = RequestMethod.GET, value = "/user/invitePeopleByUsers")
     public Response<Integer> _invitePeopleByUsers(@RequestParam("symbol") String symbol);
 
@@ -283,6 +291,10 @@ public interface UserAPI extends BaseAPI {
 
     public default List<UserInviteTreeDTO> queryUserTreeNode(Long userId, int level) {
         return getResponseData(_queryUserTreeNode(userId, level));
+    }
+
+    public default PageInfo<UserInviteTreeDTO> queryUserTreeNodeNew(Long userId, int level,Long childUserId,int page,int size) {
+        return getResponseData(_queryUserTreeNodeNew(userId, level,childUserId,page,size));
     }
     
     public default PageInfo<UserDTO> subordinatePage(UserSubordinateRequest req) {

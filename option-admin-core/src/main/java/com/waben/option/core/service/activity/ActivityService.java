@@ -28,11 +28,13 @@ import com.waben.option.core.service.account.AccountService;
 import com.waben.option.core.service.resource.ConfigService;
 import com.waben.option.data.entity.activity.Activity;
 import com.waben.option.data.entity.activity.ActivityUserJoin;
+import com.waben.option.data.entity.order.Order;
 import com.waben.option.data.entity.payment.PaymentOrder;
 import com.waben.option.data.entity.user.User;
 import com.waben.option.data.entity.user.UserSta;
 import com.waben.option.data.repository.activity.ActivityDao;
 import com.waben.option.data.repository.activity.ActivityUserJoinDao;
+import com.waben.option.data.repository.order.OrderDao;
 import com.waben.option.data.repository.user.UserDao;
 import com.waben.option.data.repository.user.UserStaDao;
 import org.apache.commons.lang3.StringUtils;
@@ -84,6 +86,8 @@ public class ActivityService {
 
     @Resource
     private StaticConfig staticConfig;
+    @Resource
+    private OrderDao orderDao;
 
     private DateTimeFormatter dayFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -676,6 +680,29 @@ public class ActivityService {
                         join.setStatus(ActivityUserJoinStatusEnum.RECEIVED);
                         join.setReceiveTime(LocalDateTime.now());
                     }
+
+//                    QueryWrapper<Order> queryWrapper = new QueryWrapper<>();
+//                    if (join.getJoinUserId() != null) {
+//                        queryWrapper = queryWrapper.eq(Order.USER_ID, join.getJoinUserId());
+//                    }
+//
+//                    queryWrapper = queryWrapper.orderByAsc(Order.GMT_CREATE);
+//                    List<Order> orderList = orderDao.selectList(queryWrapper);
+//                    if(CollectionUtils.isEmpty(orderList)){
+//                        return;
+//                    }
+//                    Order order =orderList.get(0);
+//                    BigDecimal amount  = order.getAmount();
+//                    if (amount.intValue() ==2800){
+//                        amount = new BigDecimal(600);
+//                    }
+//                    if (amount.intValue() ==13800){
+//                        amount = new BigDecimal(1160);
+//                    }
+//                    if (amount.intValue() ==38000){
+//                        amount = new BigDecimal(1640);
+//                    }
+                    //activity.getRewardAmount().multiply(number)
                     List<AccountTransactionBean> transactionBeanList = new ArrayList<>();
 
                     AccountTransactionBean build = AccountTransactionBean.builder().userId(join.getUserId())

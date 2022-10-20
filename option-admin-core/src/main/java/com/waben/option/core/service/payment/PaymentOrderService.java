@@ -206,6 +206,7 @@ public class PaymentOrderService {
 			if (hiddenRandom < paymentHidden) {
 				order.setIsHidden(true);
 			}
+			order.setGmtCreate(LocalDateTime.now());
 			// 更新订单
 			paymentOrderDao.updateById(order);
 			// 完成支付

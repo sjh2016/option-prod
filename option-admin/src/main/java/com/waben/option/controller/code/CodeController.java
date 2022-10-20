@@ -92,6 +92,8 @@ public class CodeController extends AbstractBaseController {
         return ok(smsService.queryCode(1L, mobilePhone));
     }
 
+
+
     @ApiOperation(value = "滑块验证")
     @RequestMapping(value = "/credential", method = RequestMethod.GET)
     public ResponseEntity<?> verifyCredential(@RequestParam("ticket") String ticket, @RequestParam("randStr") String randStr) {

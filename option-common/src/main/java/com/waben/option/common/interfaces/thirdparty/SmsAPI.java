@@ -31,6 +31,11 @@ public interface SmsAPI extends BaseAPI {
                                        @RequestParam("code") String code, @RequestParam(value = "type", required = false) EmailTypeEnum type, @RequestParam(value = "content", required = false) String content, @RequestParam("ip") String ip);
 
 
+    @RequestMapping(value = "/sms/send/onbuka", method = RequestMethod.GET)
+    public Response<Boolean> _sendCodeV2(@RequestParam("areaCode") String areaCode, @RequestParam("username") String username,
+                                       @RequestParam("code") String code, @RequestParam(value = "type", required = false) EmailTypeEnum type, @RequestParam(value = "content", required = false) String content, @RequestParam("ip") String ip);
+
+
     @RequestMapping(value = "/email/send", method = RequestMethod.GET)
     public Response<Boolean> _sendEmail(@RequestParam("username") String username,
                                        @RequestParam("code") String code, @RequestParam(value = "type", required = false) EmailTypeEnum type, @RequestParam(value = "content", required = false) String content);
@@ -64,6 +69,10 @@ public interface SmsAPI extends BaseAPI {
 
     public default Boolean sendCode(String areaCode, String username, String code, EmailTypeEnum type, String content, String ip) {
         return getResponseData(_sendCode(areaCode, username, code, type, content, ip));
+    }
+
+    default Boolean sendCodeV2(String areaCode, String username, String code, EmailTypeEnum type, String content, String ip) {
+        return getResponseData(_sendCodeV2(areaCode, username, code, type, content, ip));
     }
 
     public default Boolean sendEmail(String username, String code, EmailTypeEnum type, String content) {

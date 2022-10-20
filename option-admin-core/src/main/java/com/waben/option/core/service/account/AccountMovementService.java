@@ -7,6 +7,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,9 @@ import com.waben.option.data.entity.user.AccountMovement;
 import com.waben.option.data.entity.user.User;
 import com.waben.option.data.repository.user.AccountMovementDao;
 import com.waben.option.data.repository.user.UserDao;
+import org.springframework.util.CollectionUtils;
 
+@Slf4j
 @Service
 public class AccountMovementService {
 
@@ -56,6 +59,7 @@ public class AccountMovementService {
 //    @ShardingTransactionType(value = TransactionType.XA)
     @Transactional(rollbackFor = Exception.class)
     public void apply(Long applyUserId, UserAccountMovementApplyRequest req) {
+
         if (req.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ServerException(1001);
         }
@@ -65,6 +69,10 @@ public class AccountMovementService {
 
         User user = userDao.selectById(applyUserId);
         List<UserAccountDTO> account = accountService.queryAccountList(Lists.newArrayList(req.getUserId()), staticConfig.getDefaultCurrency());
+        if (CollectionUtils.isEmpty(account)){
+            log.info("apply account size:{}",account.size());
+            return;
+        }
         AccountMovement entity = new AccountMovement();
         entity.setId(idWorker.nextId());
         entity.setAccountId(account.get(0).getId());

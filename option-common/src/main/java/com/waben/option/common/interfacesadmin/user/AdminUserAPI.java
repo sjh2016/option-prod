@@ -2,6 +2,7 @@ package com.waben.option.common.interfacesadmin.user;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -69,6 +70,9 @@ public interface AdminUserAPI extends BaseAPI {
 
     @RequestMapping(method = RequestMethod.POST, value = "/user/queryUserPage")
     public Response<PageInfo<UserDTO>> _queryUserPage(@RequestBody UserPageQuery userQuery);
+
+    @RequestMapping(method = RequestMethod.POST, value = "/user/queryUserCount")
+    public Response<Map<String,Integer>> _queryUserCount(@RequestBody UserPageQuery userQuery);
 
     @RequestMapping(method = RequestMethod.POST, value = "/user/update/updateUserBasic")
     public Response<Void> _updateUserBasic(@RequestBody UpdateUserBasicRequest request);
@@ -235,6 +239,10 @@ public interface AdminUserAPI extends BaseAPI {
      */
     public default PageInfo<UserDTO> queryUserPage(UserPageQuery userQuery) {
         return getResponseData(_queryUserPage(userQuery));
+    }
+
+    public default Map<String,Integer> queryUserCount(UserPageQuery userQuery) {
+        return getResponseData(_queryUserCount(userQuery));
     }
 
     /**
