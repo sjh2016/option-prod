@@ -42,4 +42,6 @@ public class UserTreeNodeDTO {
         childrenList.add(node);
     }
 
+    private BigDecimal totalRechargeAmount;
+
 }

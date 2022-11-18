@@ -65,6 +65,13 @@ public class OrderController extends AbstractBaseController {
         return ok(orderService.queryPage(userId, status, page, size,topId));
     }
 
+    @RequestMapping(value = "/queryPage/first", method = RequestMethod.GET)
+    public ResponseEntity<?> queryPageFirst(@RequestParam(value = "userId", required = false) Long userId,
+                                       @RequestParam(value = "status", required = false) OrderStatusEnum status, @RequestParam("page") int page,
+                                       @RequestParam("size") int size,@RequestParam(value="topId",required = false) String topId) {
+        return ok(orderService.queryPageFirst(userId, status, page, size,topId));
+    }
+
     @RequestMapping(value = "/user/sta", method = RequestMethod.GET)
     public ResponseEntity<?> userSta(@RequestParam("userId") Long userId) throws ExecutionException {
         return ok(orderService.userStaByCache(userId));

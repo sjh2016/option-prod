@@ -46,6 +46,11 @@ public interface OrderAPI extends BaseAPI {
 			@RequestParam(value = "status", required = false) OrderStatusEnum status, @RequestParam("page") int page,
 			@RequestParam("size") int size,@RequestParam(value="topId",required = false) String topId);
 
+	@RequestMapping(value = "/queryPage/first", method = RequestMethod.GET)
+	public Response<PageInfo<OrderDTO>> _queryPageFirst(@RequestParam(value = "userId", required = false) Long userId,
+												   @RequestParam(value = "status", required = false) OrderStatusEnum status, @RequestParam("page") int page,
+												   @RequestParam("size") int size,@RequestParam(value="topId",required = false) String topId);
+
 	@RequestMapping(value = "/user/sta", method = RequestMethod.GET)
 	public Response<OrderUserStaDTO> _userSta(@RequestParam("userId") Long userId);
 
@@ -100,6 +105,10 @@ public interface OrderAPI extends BaseAPI {
 
 	public default void receiveGiveOrder(Long userId) {
 		getResponseData(_receiveGiveOrder(userId));
+	}
+
+	public default PageInfo<OrderDTO> queryPageFirst(Long userId, OrderStatusEnum status, int page, int size, String topId) {
+		return getResponseData(_queryPageFirst(userId, status, page, size,topId));
 	}
 
 }

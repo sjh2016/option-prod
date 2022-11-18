@@ -32,4 +32,5 @@ public class UserInviteTreeDTO {
 
     private InviteAuditStatusEnum inviteAuditStatus;
 
+    private BigDecimal totalRechargeAmount;
 }

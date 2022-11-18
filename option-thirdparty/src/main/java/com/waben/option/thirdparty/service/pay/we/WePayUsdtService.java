@@ -1,7 +1,7 @@
 package com.waben.option.thirdparty.service.pay.we;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.nacos.api.config.ConfigService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.waben.option.common.component.IdWorker;
@@ -18,26 +18,18 @@ import com.waben.option.common.model.request.payment.PaymentUpdateThirdInfoReque
 import com.waben.option.common.model.request.payment.WithdrawSystemRequest;
 import com.waben.option.common.util.EncryptUtil;
 import com.waben.option.common.util.JacksonUtil;
-import com.waben.option.common.util.RsaSecretUtils;
 import com.waben.option.common.util.RsaUtil;
 import com.waben.option.thirdparty.service.ip.IpAddressService;
 import com.waben.option.thirdparty.service.pay.AbstractPaymentService;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import okhttp3.internal.http.HttpHeaders;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Base64Utils;
-import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +37,7 @@ import java.util.TreeMap;
 
 @Slf4j
 @Service
-public class WePayAddService extends AbstractPaymentService {
+public class WePayUsdtService extends AbstractPaymentService {
 
     @Resource
     private ObjectMapper objectMapper;
@@ -192,26 +184,28 @@ public class WePayAddService extends AbstractPaymentService {
 
     @Override
     public PayCallbackHandleResult payCallback(PaymentApiConfigDTO payApiConfig, Map<String, String> data) {
-        log.info("**************************8wepay add payment callback: {}", data);
+        log.info("**************************wepay usdt payment callback: {}", data);
+        String usdtRate = data.get("usdtRate");
         PayCallbackHandleResult result = new PayCallbackHandleResult();
         // 验证签名
         String sign = data.get("sign");
         data.remove("sign");
         data.remove("signType");
+        data.remove("usdtRate");
         TreeMap<String, Object> checkMap = new TreeMap<>(data);
-       //String checkSign = RsaUtil.decryptByPublic(sign, payApiConfig.getPublicKey());
+        //String checkSign = RsaUtil.decryptByPublic(sign, payApiConfig.getPublicKey());
         String checkSign = EncryptUtil.getMD5(mapToQueryString(checkMap) + "&key=" + payApiConfig.getSecretKey()).toLowerCase();
         if (sign.equalsIgnoreCase(checkSign)) {
             String status = data.get("status");
             if ("SUCCESS".equalsIgnoreCase(status)) {
                 result.setPaySuccess(true);
-                result.setRealMoney(new BigDecimal(data.get("order_amount")));
+                result.setRealMoney(new BigDecimal(data.get("order_amount")).divide(new BigDecimal(usdtRate),2,BigDecimal.ROUND_HALF_UP));
             } else {
                 result.setPaySuccess(false);
             }
             result.setBackThirdData("success");
         } else {
-            log.info("wepay payment signature not match: {} - {}", sign, checkSign);
+            log.info("wepay usdt payment signature not match: {} - {}", sign, checkSign);
             result.setPaySuccess(false);
             result.setBackThirdData("fail");
         }
@@ -306,8 +300,8 @@ public class WePayAddService extends AbstractPaymentService {
         return result;
     }
 
-	private String cutRemark(String remark){
-		return StringUtils.trim(remark.replace("withdraw", ""));
-	}
+    private String cutRemark(String remark){
+        return StringUtils.trim(remark.replace("withdraw", ""));
+    }
 
 }

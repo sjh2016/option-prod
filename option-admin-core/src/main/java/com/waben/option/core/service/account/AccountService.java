@@ -279,7 +279,7 @@ public class AccountService {
 		}
 
 		QueryWrapper<User> queryWrapperUser = new QueryWrapper<>();
-		queryWrapperUser.in("userId",uidList);
+		queryWrapperUser.in("id",uidList);
 		List<User> userList = userDao.selectList(queryWrapperUser);
 		Map<Long,String> ma = Maps.newHashMap();
 		for (User user : userList) {
@@ -290,14 +290,14 @@ public class AccountService {
 
 		List<UserAccountDTO> userAccountDTOS = userAccountList.stream().map(userAccount -> modelMapper.map(userAccount, UserAccountDTO.class))
 				.collect(Collectors.toList());
-
+		BigDecimal big = new BigDecimal(0);
 		for (UserAccountDTO userAccountDTO : userAccountDTOS) {
 			Long userId = userAccountDTO.getUserId();
 			String uid = ma.get(userId);
 			QueryWrapper<UserSta> queryWrapperUserSta = new QueryWrapper<>();
 			queryWrapperUserSta.eq("uid",uid);
 			UserSta sta = userStaDao.selectOne(queryWrapperUserSta);
-			userAccountDTO.setTotalRechargeAmount(sta.getTotalRechargeAmount());
+			userAccountDTO.setTotalRechargeAmount(sta == null?big:sta.getTotalRechargeAmount());
 		}
 
 		return userAccountDTOS;

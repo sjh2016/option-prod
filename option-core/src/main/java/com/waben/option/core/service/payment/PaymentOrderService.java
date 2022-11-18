@@ -146,6 +146,7 @@ public class PaymentOrderService {
     }
 
     public PaymentOrderDTO queryByOrderNo(String orderNo) {
+        log.info("core orderNo:{}",orderNo);
         QueryWrapper<PaymentOrder> query = new QueryWrapper<>();
         query.eq(PaymentOrder.ORDER_NO, orderNo);
         PaymentOrder order = paymentOrderDao.selectOne(query);

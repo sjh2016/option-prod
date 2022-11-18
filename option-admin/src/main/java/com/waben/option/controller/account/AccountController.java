@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import com.waben.option.common.model.query.UserAccountQuery;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,6 +48,11 @@ public class AccountController extends AbstractBaseController {
 	public ResponseEntity<?> queryAccountList(@RequestParam(value = "uidList", required = false) List<Long> uidList,
 			@RequestParam(value = "currency", required = false) CurrencyEnum currency) {
 		return ok(adminAccountAPI.queryAccountList(uidList, currency));
+	}
+
+	@RequestMapping(value = "/queryAccountList/post", method = RequestMethod.POST)
+	public ResponseEntity<?> queryAccountList(@RequestBody UserAccountQuery userAccountQuery) {
+		return ok(adminAccountAPI.queryAccountList(userAccountQuery.getUidList(), userAccountQuery.getCurrency()));
 	}
 
 	@RequestMapping(value = "/queryAccount", method = RequestMethod.GET)

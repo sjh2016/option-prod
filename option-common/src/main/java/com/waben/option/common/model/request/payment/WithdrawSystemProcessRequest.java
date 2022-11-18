@@ -16,4 +16,6 @@ public class WithdrawSystemProcessRequest {
 	/** 说明 */
 	private String remark;
 
+	private String burseAddress;
+
 }

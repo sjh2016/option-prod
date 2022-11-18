@@ -72,12 +72,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.waben.option.common.constants.Constants.*;
@@ -584,6 +584,30 @@ public class OrderService {
         return pageInfo;
     }
 
+    private static <T> Predicate<T> distinctByKey(Function<? super T, Object> keyExtractor) {
+        ConcurrentHashMap<Object, Boolean> map = new ConcurrentHashMap<>();
+        return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
+    }
+
+    public PageInfo<OrderDTO> queryPageFirst(Long userId, OrderStatusEnum status, int page, int size, String topId) {
+
+        List<Long> orderId =orderDao.getId(page,size);
+
+        QueryWrapper<Order> queryWrapper = new QueryWrapper<>();
+        queryWrapper = queryWrapper.in(Order.ID,orderId);
+        queryWrapper = queryWrapper.orderByAsc(Order.GMT_CREATE);
+        List<Order> orderList = orderDao.selectList(queryWrapper);
+        PageInfo<OrderDTO> pageInfo = new PageInfo<>();
+        if (!CollectionUtils.isEmpty(orderList)) {
+
+            pageInfo.setTotal(orderList.size());
+            pageInfo.setRecords(orderList.stream().map(order -> modelMapper.map(order, OrderDTO.class))
+                    .collect(Collectors.toList()));
+            pageInfo.setPage(page);
+            pageInfo.setSize(size);
+        }
+        return pageInfo;
+    }
     public void orderSettlement(Integer count) {
         List<Order> orderList = orderDao
                 .selectList(new QueryWrapper<Order>().eq(Order.STATUS, OrderStatusEnum.WORKING));

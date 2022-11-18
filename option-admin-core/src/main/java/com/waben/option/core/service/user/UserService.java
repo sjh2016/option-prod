@@ -5,10 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -928,7 +925,6 @@ public class UserService {
 			}
 		}
 		node.setChildrenList(childrenList);
-
 		List<UserTreeNodeDTO> result = new ArrayList<>();
 		result.add(node);
 		return result;
@@ -1185,8 +1181,28 @@ public class UserService {
 		}
 		paymentOrder = paymentOrder.eq(PaymentOrder.STATUS, "SUCCESS");
 		List<PaymentOrder> orderList = paymentOrderDao.selectList(paymentOrder);
+		int sum=0;
+		if (!CollectionUtils.isEmpty(orderList)){
+		Map<Long,List<PaymentOrder>>	mapList = orderList.stream().collect(Collectors.groupingBy(PaymentOrder::getUserId));
+		     Set<Long> setValue = mapList.keySet();
+			for (Long aLong : setValue) {
+				log.info("recharge aLong:{}",aLong);
+				QueryWrapper<PaymentOrder> paymentQuery = new QueryWrapper<>();
+				if (userQuery.getRegisterStart() != null) {
+					paymentQuery = paymentQuery.lt(PaymentOrder.GMT_CREATE, userQuery.getRegisterStart());
+				}
+				paymentQuery = paymentQuery.eq(PaymentOrder.STATUS, "SUCCESS");
+				paymentQuery = paymentQuery.eq(PaymentOrder.USER_ID,aLong);
+				List<PaymentOrder> paymentOrderList = paymentOrderDao.selectList(paymentQuery);
+				if (CollectionUtils.isEmpty(paymentOrderList)){
+					log.info("recharge aLong add:{}",aLong);
+					sum +=1;
+				}
+			}
+		}
 
-		map.put("firstRechargeCount",!CollectionUtils.isEmpty(orderList)?	orderList.stream().collect(Collectors.groupingBy(PaymentOrder::getUserId)).size():0);
+
+		map.put("firstRechargeCount",sum);
 		String dateStr = "2022-09-03 00:00:00";
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 		LocalDateTime parsedDate = LocalDateTime.parse(dateStr, formatter);

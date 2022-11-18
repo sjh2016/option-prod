@@ -5,6 +5,7 @@ import com.waben.option.common.util.RsaUtil;
 import okhttp3.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.time.LocalDate;
@@ -33,10 +34,9 @@ public class TestDemo {
     }
 
     public static void main(String [] args) throws Exception {
-        LocalDateTime startDateTime = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
-        LocalDateTime endDateTime = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
-        System.out.println(startDateTime);
-        System.out.println(endDateTime);
+            BigDecimal big = new BigDecimal(2800);
+            BigDecimal bigs = new BigDecimal(74);
+        System.out.println(big.divide(bigs,2,BigDecimal.ROUND_HALF_UP));
     }
 
     public static  String signRsA(String param) throws Exception {

@@ -205,7 +205,7 @@ public class WePayAddService extends AbstractPaymentService {
             String status = data.get("status");
             if ("SUCCESS".equalsIgnoreCase(status)) {
                 result.setPaySuccess(true);
-                result.setRealMoney(new BigDecimal(data.get("amount")));
+                result.setRealMoney(new BigDecimal(data.get("order_amount")));
             } else {
                 result.setPaySuccess(false);
             }
@@ -221,42 +221,39 @@ public class WePayAddService extends AbstractPaymentService {
     @Override
     public WithdrawSystemResult withdraw(WithdrawSystemRequest request, UserDTO user, WithdrawOrderDTO order, PaymentApiConfigDTO payApiConfig, PaymentMethodDTO method) {
         try {
-//			if (StringUtils.isBlank(order.getBranchName())) {
-//				throw new ServerException(BusinessErrorConstants.ERROR_WITHDRAW_REQ_FAIL_WITH_MSG, "IFSC支行信息不能为空");
-//			}
-            // 构建参数
-            Map<String, Object> params = new TreeMap<>();
-            params.put("mch_id", payApiConfig.getMerchantId());
-            params.put("mch_transferId", order.getOrderNo());
-            params.put("transfer_amount", request.getRealNum().setScale(0, RoundingMode.DOWN).toPlainString());
-            params.put("apply_date", formatter.format(LocalDateTime.now()));
-            params.put("bank_code", order.getBankCode());
-            params.put("receive_name", order.getName());
-            params.put("receive_account", order.getBankCardId());
-            params.put("back_url", payApiConfig.getNotifyUrl());
-            params.put("remark", cutRemark(order.getBranchName()));
-            // 签名
-            String sign = EncryptUtil.getMD5(mapToQueryString(params) + "&key=" + payApiConfig.getSecretKey()).toLowerCase();
-            params.put("sign_type", "MD5");
-            params.put("sign", sign);
-            // 请求上游
-            String paramString = mapToQueryString(params);
-            log.info("wepay withdraw param: {}", paramString);
-            Request postRequest = new Request.Builder().url(payApiConfig.getOrderUrl()).post(RequestBody.create(MediaType.parse("application/x-www-form-urlencoded;charset=UTF-8"), paramString)).build();
+            Map<String, Object> withdrawParam = new TreeMap<>();
+            withdrawParam.put("mer_no",payApiConfig.getMerchantId());
+            withdrawParam.put("mer_order_no",order.getOrderNo());
+            withdrawParam.put("acc_no",order.getBankCardId());
+            withdrawParam.put("acc_name",order.getName());
+            withdrawParam.put("ccy_no",order.getReqCurrency().name());
+            withdrawParam.put("order_amount",request.getRealNum().multiply(request.getUsdtRate()).setScale(2, RoundingMode.DOWN).toPlainString());
+            withdrawParam.put("bank_code",order.getBankCode());
+            withdrawParam.put("mobile_no",user.getMobilePhone());
+            withdrawParam.put("notifyUrl", payApiConfig.getNotifyUrl());
+            withdrawParam.put("summary", "备注");
+            String sign = signRsA(mapToQueryString(withdrawParam),payApiConfig.getPrivateKey());
+            withdrawParam.put("sign", sign);
+
+
+            String jsonStr = JSON.toJSONString(withdrawParam);
+            log.info("wepay add payment draw param json: {}", jsonStr);
+            Request postRequest = new Request.Builder().url(payApiConfig.getOrderUrl()).post(RequestBody.create(MediaType.parse("application/json;charset=UTF-8"), jsonStr)).build();
             Response response = okHttpClient.newCall(postRequest).execute();
             String json = response.body().string();
-            log.info("wepay withdraw response: " + json);
+            log.info("wepay  add payment draw response: " + json);
+
             if (response.isSuccessful()) {
                 JsonNode jsonNode = JacksonUtil.decodeToNode(json);
-                String status = jsonNode.get("respCode").asText();
+                String status = jsonNode.get("status").asText();
                 if ("SUCCESS".equals(status)) {
                     WithdrawSystemResult wr = new WithdrawSystemResult();
-                    wr.setThirdOrderNo(jsonNode.get("tradeNo").asText());
+                    wr.setThirdOrderNo(jsonNode.get("mer_order_no").asText());
                     wr.setThirdRespMsg(json);
                     wr.setImmediateSuccess(false);
                     return wr;
                 } else {
-                    String msg = jsonNode.get("errorMsg").asText();
+                    String msg = jsonNode.get("err_msg").asText();
                     if (!StringUtils.isBlank(msg)) {
                         throw new ServerException(BusinessErrorConstants.ERROR_WITHDRAW_REQ_FAIL_WITH_MSG, "上游提示错误：" + msg);
                     } else {
@@ -276,28 +273,36 @@ public class WePayAddService extends AbstractPaymentService {
 
     @Override
     public WithdrawCallbackHandleResult withdrawCallback(WithdrawOrderDTO order, PaymentApiConfigDTO payApiConfig, Map<String, String> data) {
-        log.info("wepay withdraw callback: {}", data);
+        log.info("wepay add withdraw callback: {}", data);
         WithdrawCallbackHandleResult result = new WithdrawCallbackHandleResult();
-        // 验证签名
-        String sign = data.get("sign");
-        data.remove("sign");
-        data.remove("signType");
-        TreeMap<String, Object> checkMap = new TreeMap<>(data);
-        String checkSign = EncryptUtil.getMD5(mapToQueryString(checkMap) + "&key=" + payApiConfig.getSecretKey()).toLowerCase();
-        if (sign.equalsIgnoreCase(checkSign)) {
-            String status = data.get("tradeResult");
-            if ("1".equals(status)) {
-                result.setState(1);
-            } else if ("2".equals(status)) {
-                result.setState(2);
-            } else {
-                result.setState(3);
-            }
-            result.setBackThirdData("success");
-        } else {
-            log.info("wepay withdraw signature not match: {} - {}", sign, checkSign);
-            result.setBackThirdData("fail");
+        result.setBackThirdData(data.get("status"));
+        String status = data.get("status");
+        if ("SUCCESS".equalsIgnoreCase(status)){
+            result.setState(1);
+        }else{
+            result.setState(2);
         }
+
+        // 验证签名
+//        String sign = data.get("sign");
+//        data.remove("sign");
+//        data.remove("signType");
+//        TreeMap<String, Object> checkMap = new TreeMap<>(data);
+//        String checkSign = EncryptUtil.getMD5(mapToQueryString(checkMap) + "&key=" + payApiConfig.getSecretKey()).toLowerCase();
+//        if (sign.equalsIgnoreCase(checkSign)) {
+//            String status = data.get("tradeResult");
+//            if ("1".equals(status)) {
+//                result.setState(1);
+//            } else if ("2".equals(status)) {
+//                result.setState(2);
+//            } else {
+//                result.setState(3);
+//            }
+//            result.setBackThirdData("success");
+//        } else {
+//            log.info("wepay withdraw signature not match: {} - {}", sign, checkSign);
+//            result.setBackThirdData("fail");
+//        }
         return result;
     }
 

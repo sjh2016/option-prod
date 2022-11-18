@@ -386,8 +386,8 @@ public class WithdrawOrderService {
 //    @ShardingTransactionType(value = TransactionType.XA)
 	@Transactional(rollbackFor = Exception.class)
 	public void systemProcess(Long auditUserId, WithdrawSystemProcessRequest req) {
-		log.info("withdraw order {} do system withdraw by {}, realNum {}, remark {}", req.getId(), auditUserId,
-				req.getRealNum(), req.getRemark());
+		log.info("withdraw order {} do system withdraw by {}, realNum {}, remark {},address {}", req.getId(), auditUserId,
+				req.getRealNum(), req.getRemark(),req.getBurseAddress());
 		WithdrawOrder order = withdrawOrderDao.selectById(req.getId());
 		if (order == null) {
 			throw new ServerException(1001);
@@ -415,6 +415,7 @@ public class WithdrawOrderService {
 			realNum = order.getRealNum();
 		}
 		WithdrawSystemRequest withdrawReq = new WithdrawSystemRequest();
+		withdrawReq.setBurseAddress(req.getBurseAddress());
 		withdrawReq.setPassagewayId(req.getPassagewayId());
 		withdrawReq.setId(req.getId());
 		withdrawReq.setRealNum(realNum.setScale(staticConfig.getDefaultCurrency().getPrecision(), RoundingMode.DOWN));

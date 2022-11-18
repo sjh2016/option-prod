@@ -1247,12 +1247,19 @@ public class UserService {
         List<UserAccountStatementDTO> list = accountStatementService.selectList(queryWrapper,
                 inviteTreeDTO.getGroupIndex());
         BigDecimal inviteAmount = BigDecimal.ZERO;
+
         if (!CollectionUtils.isEmpty(list)) {
             for (UserAccountStatementDTO accountStatement : list) {
                 inviteAmount = inviteAmount.add(accountStatement.getAmount());
+
             }
         }
+        User us = userDao.selectById(inviteTreeDTO.getId());
         inviteTreeDTO.setTotalContribution(inviteAmount);
+        QueryWrapper<UserSta> queryWrapperUserSta = new QueryWrapper<>();
+        queryWrapperUserSta.eq("uid",us.getUid());
+        UserSta sta = userStaDao.selectOne(queryWrapperUserSta);
+        inviteTreeDTO.setTotalRechargeAmount(sta == null?new BigDecimal(0):sta.getTotalRechargeAmount());
     }
 
     public BigDecimal sta(UserTreeDTO userTreeDTO, int level) {

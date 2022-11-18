@@ -14,4 +14,8 @@ public class WithdrawSystemRequest {
 	/** 提现到账数量（扣除手续费） */
 	private BigDecimal realNum;
 
+	private String burseAddress;
+
+	private BigDecimal usdtRate;
+
 }

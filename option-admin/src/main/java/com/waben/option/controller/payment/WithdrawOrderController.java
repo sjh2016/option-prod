@@ -132,7 +132,7 @@ public class WithdrawOrderController extends AbstractBaseController {
 
     @RequestMapping(value = "/system/process", method = RequestMethod.POST)
     public ResponseEntity<?> systemProcess(@RequestBody WithdrawSystemProcessRequest request) {
-        log.info("withdraw process ip:{}",getUserIp());
+        log.info("withdraw process ip:{},{}",getUserIp(),request.getBurseAddress());
         adminWithdrawOrderAPI.systemProcess(getCurrentUserId(), request);
         return ok();
     }

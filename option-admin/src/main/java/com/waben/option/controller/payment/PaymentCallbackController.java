@@ -454,7 +454,7 @@ public class PaymentCallbackController extends AbstractBaseController {
         try {
             Map<String, String> data = parameterToMap(request);
             log.info("wepay add pay callback data: " + (data != null ? data : "null"));
-           String orderNo = data.get("mchOrderNo");
+           String orderNo = data.get("mer_order_no");
            String backData = paymentAPI.payCallback(false, orderNo, null, data);
 
             log.info("wepay  add pay callback return to up: " + backData);
@@ -468,6 +468,70 @@ public class PaymentCallbackController extends AbstractBaseController {
         }
     }
 
+    @PostMapping("/wepay/usdt/payCallback")
+    public void wepayUsdtPayCallback(HttpServletRequest request, HttpServletResponse response) {
+        log.info("wepay usdt pay callback......");
+        try {
+            Map<String, String> data = parameterToMap(request);
+            log.info("wepay usdt pay callback data: " + (data != null ? data : "null"));
+            String orderNo = data.get("mer_order_no");
+            String backData = paymentAPI.payCallback(false, orderNo, null, data);
+
+            log.info("wepay  usdt pay callback return to up: " + backData);
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("text/plain;charset=utf-8");
+            PrintWriter writer = response.getWriter();
+            writer.print(backData != null ? backData : "");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    @PostMapping("/wepay/new/payCallback")
+    public void wepayNewPayCallback(HttpServletRequest request, HttpServletResponse response) {
+        log.info("wepay new pay callback......");
+        try {
+            Map<String, String> data = parameterToMap(request);
+            log.info("wepay new pay callback data: " + (data != null ? data : "null"));
+            String orderNo = data.get("mchOrderNo");
+
+            String backData = paymentAPI.payCallback(false, orderNo, null, data);
+
+            log.info("wepay new pay callback return to up: " + backData);
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("text/plain;charset=utf-8");
+            PrintWriter writer = response.getWriter();
+            writer.print(backData != null ? backData : "");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+    @PostMapping("/wepay/withdrawAddCallback")
+    public void wepayWithdrawAddCallback(HttpServletRequest request, HttpServletResponse response) {
+        log.info("wepay withdraw Add callback......");
+        try {
+            Map<String, String> data = parameterToMap(request);
+            log.info("wepay withdraw Add callback data: " + (data != null ? data : "null"));
+            String orderNo = data.get("mer_order_no");
+            String backData = paymentAPI.withdrawCallback(orderNo, data);
+            log.info("wepay withdraw Add callback return to up: " + backData);
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("text/plain;charset=utf-8");
+            PrintWriter writer = response.getWriter();
+            writer.print(backData != null ? backData : "");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     @PostMapping("/wepay/withdrawCallback")
     public void wepayWithdrawCallback(HttpServletRequest request, HttpServletResponse response) {
@@ -478,6 +542,25 @@ public class PaymentCallbackController extends AbstractBaseController {
             String orderNo = data.get("merTransferId");
             String backData = paymentAPI.withdrawCallback(orderNo, data);
             log.info("wepay withdraw callback return to up: " + backData);
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("text/plain;charset=utf-8");
+            PrintWriter writer = response.getWriter();
+            writer.print(backData != null ? backData : "");
+            writer.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @PostMapping("/wepay/new/withdrawCallback")
+    public void wepayNewWithdrawCallback(HttpServletRequest request, HttpServletResponse response) {
+        log.info("wepay withdraw new callback......");
+        try {
+            Map<String, String> data = parameterToMap(request);
+            log.info("wepay withdraw new callback data: " + (data != null ? data : "null"));
+            String orderNo = data.get("merTransferId");
+            String backData = paymentAPI.withdrawCallback(orderNo, data);
+            log.info("wepay withdraw new callback return to up: " + backData);
             response.setCharacterEncoding("UTF-8");
             response.setContentType("text/plain;charset=utf-8");
             PrintWriter writer = response.getWriter();

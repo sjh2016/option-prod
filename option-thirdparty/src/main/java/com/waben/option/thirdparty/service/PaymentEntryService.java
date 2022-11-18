@@ -1,13 +1,19 @@
 package com.waben.option.thirdparty.service;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.waben.option.common.component.SpringContext;
+import com.waben.option.common.constants.DBConstants;
 import com.waben.option.common.exception.ServerException;
+import com.waben.option.common.interfaces.resource.ConfigAPI;
 import com.waben.option.common.interfaces.thirdparty.PaymentApiConfigAPI;
 import com.waben.option.common.interfaces.thirdparty.PaymentOrderAPI;
 import com.waben.option.common.interfaces.thirdparty.PaymentPassagewayAPI;
 import com.waben.option.common.interfaces.thirdparty.WithdrawOrderAPI;
 import com.waben.option.common.interfaces.user.UserAPI;
+import com.waben.option.common.model.Response;
 import com.waben.option.common.model.dto.payment.*;
+import com.waben.option.common.model.dto.resource.ConfigDTO;
 import com.waben.option.common.model.dto.user.UserDTO;
 import com.waben.option.common.model.enums.PaymentCashType;
 import com.waben.option.common.model.enums.PaymentOrderStatusEnum;
@@ -42,6 +48,8 @@ public class PaymentEntryService {
 
 	@Resource
 	private UserAPI userAPI;
+	@Resource
+	private ConfigAPI configAPI;
 
 	public Map<String, Object> pay(Long userId, String userIp, PayFrontRequest request) {
 		PaymentPassagewayDTO passageway = passagewayAPI.query(request.getPassagewayId());
@@ -120,7 +128,9 @@ public class PaymentEntryService {
 
 	public String payCallback(boolean isThirdOrderNo, String orderNo, Long payApiId, Map<String, String> data) {
 		// 查询支付api配置
+		log.info("orderNo:{}",orderNo);
 		PaymentOrderDTO order = paymentOrderAPI.queryByOrderNo(orderNo);
+		log.info("order value:{}",order);
 		if (order == null)
 			return "fail";
 		PaymentApiConfigDTO config;
@@ -129,9 +139,24 @@ public class PaymentEntryService {
 		} else {
 			config = apiConfigAPI.query(order.getPayApiId());
 		}
+
+		try{
+			if ("wePayUsdtService".equals(config.getBeanName())) {
+				Response<ConfigDTO> usdtRate = configAPI._queryConfig("usdtRate");
+				ConfigDTO configDtoData = usdtRate.getData();
+				data.put("usdtRate", configDtoData.getValue());
+			}
+		}catch (Exception e){
+			log.error("---->usdtRateIserror:",e);
+		}
+
 		// 获取支付api对应的service
 		PaymentService payService = SpringContext.getBean(config.getBeanName(), PaymentService.class);
+		log.info("---->payService:{}",payService);
+
+
 		PayCallbackHandleResult hr = payService.payCallback(config, data);
+		log.info("----?result :{}",hr!=null?JSON.toJSON(hr):hr);
 		if (hr.isPaySuccess()) {
 			if (config.getCashType() == PaymentCashType.PAYMENT_OTC) {
 				log.info("接收到OTC支付成功回调，开始处理 {}", orderNo);
@@ -185,11 +210,17 @@ public class PaymentEntryService {
 		WithdrawOrderDTO order = withdrawOrderAPI.query(req.getId());
 		// 检查用户
 		UserDTO user = userAPI.queryUser(order.getUserId());
-		if (payApiConfig.getNeedRealName() != null && payApiConfig.getNeedRealName()) {
+		if (passageway.getPayApiId() !=37 && payApiConfig.getNeedRealName() != null && payApiConfig.getNeedRealName()) {
 			if (user.getName() == null || "".equals(user.getName().trim())) {
 				throw new ServerException(2016);
 			}
 		}
+		if ("wePayAddService".equals(payApiConfig.getBeanName())) {
+			Response<ConfigDTO> usdtRate = configAPI._queryConfig("usdtRate");
+			ConfigDTO configDtoData = usdtRate.getData();
+			req.setUsdtRate(new BigDecimal(configDtoData.getValue()));
+		}
+
 		// 调用支付api对应的支付方法
 		PaymentService payService = SpringContext.getBean(payApiConfig.getBeanName(), PaymentService.class);
 		return payService.withdraw(req, user, order, payApiConfig, method);

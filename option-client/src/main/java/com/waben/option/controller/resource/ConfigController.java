@@ -5,9 +5,13 @@ import java.time.format.DateTimeFormatter;
 
 import javax.annotation.Resource;
 
+import com.waben.option.common.interfaces.resource.ConfigAPI;
+import com.waben.option.common.model.Response;
+import com.waben.option.common.model.dto.resource.ConfigDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.waben.option.common.web.controller.AbstractBaseController;
@@ -22,6 +26,9 @@ public class ConfigController extends AbstractBaseController {
 	@Resource
 	private ConfigService configService;
 
+	@Resource
+	private ConfigAPI configAPI;
+
 	@RequestMapping(value = "/queryPath", method = RequestMethod.GET)
 	public ResponseEntity<?> queryPath() {
 		return ok(configService.queryPath());
@@ -31,6 +38,13 @@ public class ConfigController extends AbstractBaseController {
 	public ResponseEntity<?> serverTime() {
 		LocalDateTime now = LocalDateTime.now();
 		return ok(formatter.format(now));
+	}
+
+	@RequestMapping(value = "/getRate", method = RequestMethod.GET)
+	public ResponseEntity<?> getRate(@RequestParam("param") String param) {
+		Response<ConfigDTO> usdtRate = configAPI._queryConfig(param);
+		ConfigDTO configDtoData = usdtRate.getData();
+		return ok(configDtoData);
 	}
 
 }
