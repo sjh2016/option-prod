@@ -590,6 +590,11 @@ public class OrderService {
     }
 
     public PageInfo<OrderDTO> queryPageFirst(Long userId, OrderStatusEnum status, int page, int size, String topId) {
+        PageInfo<OrderDTO> pageInfo = new PageInfo<>();
+        Integer count = orderDao.getCount(page, size);
+        if (count == 0){
+            return pageInfo;
+        }
 
         List<Long> orderId =orderDao.getId(page,size);
 
@@ -597,10 +602,9 @@ public class OrderService {
         queryWrapper = queryWrapper.in(Order.ID,orderId);
         queryWrapper = queryWrapper.orderByAsc(Order.GMT_CREATE);
         List<Order> orderList = orderDao.selectList(queryWrapper);
-        PageInfo<OrderDTO> pageInfo = new PageInfo<>();
-        if (!CollectionUtils.isEmpty(orderList)) {
 
-            pageInfo.setTotal(orderList.size());
+        if (!CollectionUtils.isEmpty(orderList)) {
+            pageInfo.setTotal(count);
             pageInfo.setRecords(orderList.stream().map(order -> modelMapper.map(order, OrderDTO.class))
                     .collect(Collectors.toList()));
             pageInfo.setPage(page);

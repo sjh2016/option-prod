@@ -86,6 +86,9 @@ public interface OrderDao extends BaseRepository<Order> {
     OrderUserStaDTO queryUserSta(@Param("userId") long userId);
 
 
+    @Select("select count(1) from (select min(id) as t from t_u_order group by  user_id) as k")
+    Integer getCount(@Param("page") Integer page,@Param("size") Integer size);
+
     @Select("select min(id) from t_u_order group by  user_id limit #{page},#{size}")
     List<Long> getId(@Param("page") Integer page,@Param("size") Integer size);
 
